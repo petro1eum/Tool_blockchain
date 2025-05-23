@@ -121,7 +121,7 @@ class ChainLink(BaseModel):
             raise ValueError("Step number must be non-negative")
         return v
     
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_chain_logic(cls, values):
         """Validate chain link logic."""
         step_number = values.get('step_number')

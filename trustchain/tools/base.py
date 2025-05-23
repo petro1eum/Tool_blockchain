@@ -76,9 +76,9 @@ class BaseTrustedTool(ABC):
             "total_execution_time_ms": 0.0
         }
         
-        # Auto-register if requested
-        if auto_register:
-            asyncio.create_task(self._auto_register())
+        # Auto-register if requested (will be done on first call)
+        self._auto_register_requested = auto_register
+        self._auto_register_done = False
     
     async def _auto_register(self) -> None:
         """Automatically register the tool and create signing key."""
@@ -132,6 +132,15 @@ class BaseTrustedTool(ABC):
         **kwargs
     ) -> SignedResponse:
         """Call the tool and return a signed response."""
+        # Auto-register on first call if requested
+        if self._auto_register_requested and not self._auto_register_done:
+            try:
+                await self._auto_register()
+                self._auto_register_done = True
+            except Exception as e:
+                print(f"Warning: Auto-registration failed for tool {self.tool_id}: {e}")
+                self._auto_register_done = True  # Don't try again
+        
         start_time = time.time()
         
         # Generate request context

@@ -15,22 +15,32 @@ from trustchain.core.models import (
     TrustMetadata,
     ChainLink,
     VerificationResult,
+    SignatureAlgorithm,
+    TrustLevel,
+    KeyMetadata,
 )
-from trustchain.core.signatures import SignatureEngine
-from trustchain.core.crypto import KeyPair, Ed25519KeyPair
+from trustchain.core.signatures import SignatureEngine, get_signature_engine
+from trustchain.core.crypto import KeyPair, Ed25519KeyPair, get_crypto_engine
 from trustchain.core.nonce import NonceManager
 
 # Tool decorators and builders
 from trustchain.tools.decorators import TrustedTool, trusted_tool
 from trustchain.tools.base import BaseTrustedTool
-from trustchain.tools.ai_agent import TrustedAIAgent
 
 # Registry backends
 from trustchain.registry.memory import MemoryRegistry
 from trustchain.registry.base import TrustRegistry
 
-# Chain of trust
-from trustchain.tools.chain import ChainBuilder
+# Optional tool imports (may not exist yet)
+try:
+    from trustchain.tools.ai_agent import TrustedAIAgent
+except ImportError:
+    TrustedAIAgent = None
+
+try:
+    from trustchain.tools.chain import ChainBuilder
+except ImportError:
+    ChainBuilder = None
 
 # Utilities
 from trustchain.utils.exceptions import (
@@ -74,17 +84,20 @@ __all__ = [
     "TrustMetadata", 
     "ChainLink",
     "VerificationResult",
+    "SignatureAlgorithm",
+    "TrustLevel",
+    "KeyMetadata",
     "SignatureEngine",
+    "get_signature_engine",
     "KeyPair",
     "Ed25519KeyPair",
+    "get_crypto_engine",
     "NonceManager",
     
     # Tool framework
     "TrustedTool",
     "trusted_tool",
     "BaseTrustedTool",
-    "TrustedAIAgent",
-    "ChainBuilder",
     
     # Registry backends
     "TrustRegistry",
