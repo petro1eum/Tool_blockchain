@@ -19,14 +19,14 @@ Requires: OPENAI_API_KEY and/or ANTHROPIC_API_KEY environment variables
 """
 
 import asyncio
-import os
 import json
-from typing import Dict, Any, Optional, List
+import os
+from typing import Any, Dict, List, Optional
+
 import pytest
 
 # Core TrustChain imports - should work without manual setup
-from trustchain import TrustedTool, TrustLevel, MemoryRegistry
-
+from trustchain import MemoryRegistry, TrustedTool, TrustLevel
 
 # ==================== TRUSTED TOOLS ====================
 

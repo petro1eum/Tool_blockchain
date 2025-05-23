@@ -1,7 +1,7 @@
 """Utility modules for TrustChain."""
 
-from trustchain.utils.exceptions import *
 from trustchain.utils.config import *
+from trustchain.utils.exceptions import *
 
 __all__ = [
     "TrustChainError",

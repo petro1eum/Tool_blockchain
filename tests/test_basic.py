@@ -5,23 +5,24 @@ Author: Ed Cherednik (edcherednik@gmail.com)
 Telegram: @EdCher
 """
 
-import pytest
 import asyncio
 import time
-from typing import Dict, Any
+from typing import Any, Dict
+
+import pytest
 
 from trustchain import (
-    TrustedTool,
     MemoryRegistry,
     SignatureAlgorithm,
+    TrustedTool,
     TrustLevel,
     get_crypto_engine,
     get_signature_engine,
 )
-from trustchain.core.models import KeyMetadata, SignedResponse
 from trustchain.core.crypto import Ed25519KeyPair
+from trustchain.core.models import KeyMetadata, SignedResponse
 from trustchain.tools.base import FunctionTrustedTool
-from trustchain.utils.exceptions import ToolExecutionError, NonceReplayError
+from trustchain.utils.exceptions import NonceReplayError, ToolExecutionError
 
 
 @pytest.fixture

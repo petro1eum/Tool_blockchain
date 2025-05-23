@@ -11,6 +11,7 @@ Run: python examples/simple_hallucination_test.py
 """
 
 import asyncio
+
 from trustchain import TrustedTool, TrustLevel
 from trustchain.core.models import SignedResponse
 

@@ -16,10 +16,9 @@ Run with: python examples/llm_real_api_examples.py
 import asyncio
 import os
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from trustchain import TrustedTool, TrustLevel
-
 
 # ==================== OPENAI REAL INTEGRATION ====================
 

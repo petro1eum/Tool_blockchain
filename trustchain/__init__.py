@@ -12,27 +12,28 @@ __version__ = "0.1.0"
 __author__ = "Ed Cherednik"
 __email__ = "edcherednik@gmail.com"
 
+from trustchain.core.crypto import Ed25519KeyPair, KeyPair, get_crypto_engine
+
 # Core imports
 from trustchain.core.models import (
-    SignedResponse,
-    TrustMetadata,
     ChainLink,
-    VerificationResult,
-    SignatureAlgorithm,
-    TrustLevel,
     KeyMetadata,
+    SignatureAlgorithm,
+    SignedResponse,
+    TrustLevel,
+    TrustMetadata,
+    VerificationResult,
 )
-from trustchain.core.signatures import SignatureEngine, get_signature_engine
-from trustchain.core.crypto import KeyPair, Ed25519KeyPair, get_crypto_engine
 from trustchain.core.nonce import NonceManager
-
-# Tool decorators and builders
-from trustchain.tools.decorators import TrustedTool, trusted_tool
-from trustchain.tools.base import BaseTrustedTool
+from trustchain.core.signatures import SignatureEngine, get_signature_engine
+from trustchain.registry.base import TrustRegistry
 
 # Registry backends
 from trustchain.registry.memory import MemoryRegistry
-from trustchain.registry.base import TrustRegistry
+from trustchain.tools.base import BaseTrustedTool
+
+# Tool decorators and builders
+from trustchain.tools.decorators import TrustedTool, trusted_tool
 
 # Optional tool imports (may not exist yet)
 try:
@@ -47,11 +48,11 @@ except ImportError:
 
 # Utilities
 from trustchain.utils.exceptions import (
-    TrustChainError,
-    SignatureVerificationError,
-    NonceReplayError,
-    KeyNotFoundError,
     ChainIntegrityError,
+    KeyNotFoundError,
+    NonceReplayError,
+    SignatureVerificationError,
+    TrustChainError,
 )
 
 # Optional imports (fail gracefully if dependencies not installed)

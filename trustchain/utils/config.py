@@ -1,10 +1,11 @@
 """Configuration management for TrustChain."""
 
 import os
-import yaml
-from pathlib import Path
-from typing import Dict, Any, Optional, Union
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
+import yaml
 from dotenv import load_dotenv
 
 from trustchain.utils.exceptions import ConfigurationError

@@ -18,10 +18,10 @@ Usage:
 3. Run: python examples/openai_anthropic_integration.py
 """
 
-import os
 import asyncio
 import json
-from typing import Dict, Any, Optional
+import os
+from typing import Any, Dict, Optional
 
 # TrustChain imports
 from trustchain import TrustedTool, TrustLevel

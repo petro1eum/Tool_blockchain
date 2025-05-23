@@ -3,19 +3,19 @@
 import asyncio
 import base64
 import time
-from typing import Dict, Any, Optional, Union, Callable
 from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Optional, Union
 
+from trustchain.core.crypto import KeyPair, get_crypto_engine
 from trustchain.core.models import (
-    SignatureInfo,
     SignatureAlgorithm,
     SignatureFormat,
+    SignatureInfo,
     SignedResponse,
-    VerificationResult,
     TrustLevel,
+    VerificationResult,
 )
-from trustchain.core.crypto import get_crypto_engine, KeyPair
-from trustchain.utils.exceptions import SignatureVerificationError, CryptoError
+from trustchain.utils.exceptions import CryptoError, SignatureVerificationError
 
 
 class Signer(ABC):

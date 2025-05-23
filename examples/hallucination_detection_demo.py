@@ -12,16 +12,15 @@ Run: python examples/hallucination_detection_demo.py
 """
 
 import asyncio
+import hashlib
 import json
 import time
-from typing import Dict, Any, List
 from dataclasses import dataclass
-import hashlib
+from typing import Any, Dict, List
 
 # TrustChain imports
-from trustchain import TrustedTool, TrustLevel, MemoryRegistry
+from trustchain import MemoryRegistry, TrustedTool, TrustLevel
 from trustchain.core.models import SignedResponse
-
 
 # ==================== SIMULATION SETUP ====================
 

@@ -2,10 +2,10 @@
 
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, AsyncIterator
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from trustchain.core.models import KeyMetadata, SignatureAlgorithm
-from trustchain.utils.exceptions import RegistryError, KeyNotFoundError
+from trustchain.utils.exceptions import KeyNotFoundError, RegistryError
 
 
 class TrustRegistry(ABC):

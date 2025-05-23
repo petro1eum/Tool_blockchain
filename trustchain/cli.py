@@ -9,27 +9,26 @@ from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.syntax import Syntax
+from rich.table import Table
 
 from trustchain import (
-    get_version,
-    check_dependencies,
     MemoryRegistry,
     SignatureAlgorithm,
     TrustLevel,
+    check_dependencies,
+    get_version,
 )
-from trustchain.core.models import KeyMetadata
 from trustchain.core.crypto import get_crypto_engine
+from trustchain.core.models import KeyMetadata
 from trustchain.core.signatures import (
+    SignatureEngine,
     get_signature_engine,
     set_signature_engine,
-    SignatureEngine,
 )
-from trustchain.utils.config import load_config, save_config, create_config_template
-
+from trustchain.utils.config import create_config_template, load_config, save_config
 
 app = typer.Typer(
     name="trustchain",

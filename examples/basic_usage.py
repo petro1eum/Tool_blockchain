@@ -3,9 +3,9 @@
 
 import asyncio
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
-from trustchain import TrustedTool, MemoryRegistry, SignatureAlgorithm, TrustLevel
+from trustchain import MemoryRegistry, SignatureAlgorithm, TrustedTool, TrustLevel
 
 
 # Example 1: Simple trusted tool

@@ -1,6 +1,6 @@
 """Custom exceptions for TrustChain."""
 
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
 
 class TrustChainError(Exception):

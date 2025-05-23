@@ -4,17 +4,17 @@ import base64
 import hashlib
 import secrets
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
-import nacl.signing
 import nacl.encoding
+import nacl.signing
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, ed25519
+from cryptography.hazmat.primitives.asymmetric import ed25519, padding, rsa
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
+    NoEncryption,
     PrivateFormat,
     PublicFormat,
-    NoEncryption,
 )
 
 from trustchain.core.models import SignatureAlgorithm, SignatureFormat

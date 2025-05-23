@@ -1,23 +1,24 @@
+import asyncio
+import hashlib
 import json
 import time
 import uuid
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, asdict
-from kafka import KafkaProducer, KafkaConsumer, KafkaAdminClient
-from kafka.admin import NewTopic, ConfigResource, ConfigResourceType
-from kafka.errors import KafkaError
-from confluent_kafka import SerializingProducer, DeserializingConsumer
-from confluent_kafka.serialization import StringSerializer, StringDeserializer
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
-import nacl.signing
-import nacl.encoding
-import hashlib
+from dataclasses import asdict, dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import nacl.encoding
+import nacl.signing
 import rocksdb
-import asyncio
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.structs import ConsumerRecord
+from confluent_kafka import DeserializingConsumer, SerializingProducer
+from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
+from confluent_kafka.serialization import StringDeserializer, StringSerializer
+from kafka import KafkaAdminClient, KafkaConsumer, KafkaProducer
+from kafka.admin import ConfigResource, ConfigResourceType, NewTopic
+from kafka.errors import KafkaError
 
 # === АРХИТЕКТУРА ТОПИКОВ ===
 

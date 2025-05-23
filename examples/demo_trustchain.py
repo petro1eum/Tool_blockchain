@@ -5,12 +5,11 @@ Comprehensive demo showing all key features of TrustChain.
 """
 
 import asyncio
-import time
 import json
-from typing import Dict, Any
+import time
+from typing import Any, Dict
 
-from trustchain import TrustedTool, TrustLevel, SignatureAlgorithm
-
+from trustchain import SignatureAlgorithm, TrustedTool, TrustLevel
 
 print("🔗 TrustChain Library Demonstration")
 print("=" * 60)

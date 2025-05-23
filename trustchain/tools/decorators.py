@@ -1,12 +1,12 @@
 """Decorators for creating trusted tools in TrustChain."""
 
 import functools
-from typing import Any, Callable, Optional, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 from trustchain.core.models import SignatureAlgorithm, TrustLevel
-from trustchain.tools.base import FunctionTrustedTool, MultiSignatureTool, register_tool
-from trustchain.registry.base import TrustRegistry
 from trustchain.core.signatures import SignatureEngine
+from trustchain.registry.base import TrustRegistry
+from trustchain.tools.base import FunctionTrustedTool, MultiSignatureTool, register_tool
 
 
 def TrustedTool(

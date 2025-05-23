@@ -17,12 +17,12 @@ import asyncio
 import json
 import os
 import time
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from trustchain import TrustedTool, TrustLevel, MemoryRegistry, SignatureEngine
+from trustchain import MemoryRegistry, SignatureEngine, TrustedTool, TrustLevel
 from trustchain.core.signatures import set_signature_engine
 
 

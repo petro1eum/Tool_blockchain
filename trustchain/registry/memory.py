@@ -1,12 +1,12 @@
 """In-memory trust registry implementation for TrustChain."""
 
-import time
 import threading
-from typing import Dict, List, Optional, Any, AsyncIterator
+import time
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from trustchain.core.models import KeyMetadata, SignatureAlgorithm
 from trustchain.registry.base import TrustRegistry
-from trustchain.utils.exceptions import RegistryError, KeyNotFoundError
+from trustchain.utils.exceptions import KeyNotFoundError, RegistryError
 
 
 class MemoryRegistry(TrustRegistry):
