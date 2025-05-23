@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to TrustChain! This document provides guidelines for contributing to the project.
 
+**Project Creator:** Ed Cherednik ([edcherednik@gmail.com](mailto:edcherednik@gmail.com) | [@EdCher](https://t.me/EdCher))
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for a full list of contributors and recognition.
+
 ## 📋 Table of Contents
 
 - [Code of Conduct](#code-of-conduct)

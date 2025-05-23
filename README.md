@@ -9,9 +9,9 @@
 [![PyPI version](https://badge.fury.io/py/trustchain.svg)](https://badge.fury.io/py/trustchain)
 [![Python versions](https://img.shields.io/pypi/pyversions/trustchain.svg)](https://pypi.org/project/trustchain/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/trustchain/trustchain/workflows/CI/badge.svg)](https://github.com/trustchain/trustchain/actions)
-[![Coverage](https://codecov.io/gh/trustchain/trustchain/branch/main/graph/badge.svg)](https://codecov.io/gh/trustchain/trustchain)
-[![Security](https://img.shields.io/badge/security-audited-green.svg)](https://github.com/trustchain/trustchain/security)
+[![Tests](https://github.com/petro1eum/Tool_blockchain/workflows/CI/badge.svg)](https://github.com/petro1eum/Tool_blockchain/actions)
+[![Coverage](https://codecov.io/gh/petro1eum/Tool_blockchain/branch/main/graph/badge.svg)](https://codecov.io/gh/petro1eum/Tool_blockchain)
+[![Security](https://img.shields.io/badge/security-audited-green.svg)](https://github.com/petro1eum/Tool_blockchain/security)
 [![Downloads](https://pepy.tech/badge/trustchain)](https://pepy.tech/project/trustchain)
 
 [📖 Documentation](https://trustchain.readthedocs.io) •
@@ -32,6 +32,8 @@ TrustChain is a **zero-trust framework** for creating cryptographically signed A
 
 **AI Hallucinations & Trust Issues**: How do you verify that an AI tool response is authentic and hasn't been tampered with? TrustChain provides cryptographic proof of authenticity for every AI output.
 
+> 🧠 **[Try the AI Hallucination Detection Demo](examples/README_HALLUCINATION_DEMO.md)** - See how TrustChain catches AI lies in real-time!
+
 ### ✨ Key Features
 
 - 🔒 **Cryptographic Signatures** - Every response signed with Ed25519/RSA-PSS
@@ -42,6 +44,7 @@ TrustChain is a **zero-trust framework** for creating cryptographically signed A
 - 🎯 **Trust Levels** - Configurable security levels (LOW/MEDIUM/HIGH/CRITICAL)
 - 🔧 **Developer Friendly** - Add trust with just a decorator
 - 📊 **Production Ready** - Comprehensive monitoring and error handling
+- 🧠 **AI Hallucination Detection** - [See live demo](examples/README_HALLUCINATION_DEMO.md)
 
 ---
 
@@ -95,6 +98,21 @@ async def process_payment(amount: float, account_from: str, account_to: str) -> 
 # Critical operations require higher trust levels
 response = await process_payment(1000.0, "acc_001", "acc_002")
 # Response includes cryptographic proof of transaction integrity
+```
+
+### 🧠 Hallucination Detection Example
+
+```python
+# ❌ AI Hallucination (fake data - no signature)
+fake_response = {"balance": 999999.99, "warning": "HALLUCINATED!"}
+print(f"Verified: {hasattr(fake_response, 'signature')}")  # False
+
+# ✅ TrustChain Response (real data - cryptographically signed)
+real_response = await check_account_balance("acc_001")
+print(f"Verified: {real_response.is_verified}")  # True
+print(f"Signature: {real_response.signature.signature[:32]}...")
+
+# TrustChain instantly detects hallucinations - no signature = no trust!
 ```
 
 ---
@@ -407,9 +425,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 👨‍💻 Author
+
+**Ed Cherednik**
+- 📧 Email: [edcherednik@gmail.com](mailto:edcherednik@gmail.com)
+- 💬 Telegram: [@EdCher](https://t.me/EdCher)
+- 🔗 GitHub: [edcherednik](https://github.com/edcherednik)
+
+---
+
 <div align="center">
 
-**Made with ❤️ by the TrustChain team**
+**Made with ❤️ by Ed Cherednik**
 
 ⭐ **Star this repository if TrustChain helped you!**
 

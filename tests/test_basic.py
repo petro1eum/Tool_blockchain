@@ -1,4 +1,9 @@
-"""Basic tests for TrustChain functionality."""
+"""
+Basic tests for TrustChain functionality.
+
+Author: Ed Cherednik (edcherednik@gmail.com)
+Telegram: @EdCher
+"""
 
 import pytest
 import asyncio

@@ -11,6 +11,9 @@ This test demonstrates:
 - No manual engine configuration needed
 - Clean, professional test code
 
+Author: Ed Cherednik (edcherednik@gmail.com)
+Telegram: @EdCher
+
 Run with: python tests/test_real_llm_clean.py
 Requires: OPENAI_API_KEY and/or ANTHROPIC_API_KEY environment variables
 """

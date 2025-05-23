@@ -3,11 +3,14 @@ TrustChain - Cryptographically signed AI tool responses for preventing hallucina
 
 This library provides a comprehensive framework for creating verifiable AI tool responses
 using cryptographic signatures, replay protection, and distributed trust registries.
+
+Author: Ed Cherednik (edcherednik@gmail.com)
+Telegram: @EdCher
 """
 
 __version__ = "0.1.0"
-__author__ = "TrustChain Contributors"
-__email__ = "info@trustchain.dev"
+__author__ = "Ed Cherednik"
+__email__ = "edcherednik@gmail.com"
 
 # Core imports
 from trustchain.core.models import (
