@@ -1,2 +1,0 @@
-[console_scripts]
-trustchain = trustchain.cli:main
