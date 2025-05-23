@@ -1,1 +1,1 @@
-"""Examples for TrustChain library.""" 
+"""Examples for TrustChain library."""

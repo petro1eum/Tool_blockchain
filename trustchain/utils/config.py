@@ -13,6 +13,7 @@ from trustchain.utils.exceptions import ConfigurationError
 @dataclass
 class CryptoConfig:
     """Cryptographic configuration."""
+
     algorithm: str = "Ed25519"
     key_size: int = 32
     signature_format: str = "base64"
@@ -22,17 +23,18 @@ class CryptoConfig:
 @dataclass
 class RegistryConfig:
     """Trust registry configuration."""
+
     backend: str = "memory"  # memory, redis, kafka
     url: Optional[str] = None
     namespace: str = "trustchain"
     ttl: int = 3600  # nonce TTL in seconds
-    
+
     # Redis specific
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
     redis_password: Optional[str] = None
-    
+
     # Kafka specific
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_group_id: str = "trustchain"
@@ -42,6 +44,7 @@ class RegistryConfig:
 @dataclass
 class SecurityConfig:
     """Security configuration."""
+
     nonce_window: int = 300  # seconds
     max_chain_length: int = 100
     signature_cache_ttl: int = 3600
@@ -53,6 +56,7 @@ class SecurityConfig:
 @dataclass
 class MonitoringConfig:
     """Monitoring and observability configuration."""
+
     enabled: bool = True
     metrics_port: int = 8090
     dashboard_port: int = 8080
@@ -66,17 +70,18 @@ class MonitoringConfig:
 @dataclass
 class TrustChainConfig:
     """Main TrustChain configuration."""
+
     crypto: CryptoConfig = field(default_factory=CryptoConfig)
     registry: RegistryConfig = field(default_factory=RegistryConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     monitoring: MonitoringConfig = field(default_factory=MonitoringConfig)
-    
+
     # Global settings
     debug: bool = False
     environment: str = "development"
     app_name: str = "trustchain"
     version: str = "0.1.0"
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TrustChainConfig":
         """Create config from dictionary."""
@@ -90,7 +95,7 @@ class TrustChainConfig:
             app_name=data.get("app_name", "trustchain"),
             version=data.get("version", "0.1.0"),
         )
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary."""
         return {
@@ -136,55 +141,54 @@ class TrustChainConfig:
             "app_name": self.app_name,
             "version": self.version,
         }
-    
+
     def validate(self) -> None:
         """Validate configuration."""
         # Validate crypto config
         if self.crypto.algorithm not in ["Ed25519", "RSA", "ECDSA"]:
             raise ConfigurationError(
                 f"Unsupported algorithm: {self.crypto.algorithm}",
-                config_key="crypto.algorithm"
+                config_key="crypto.algorithm",
             )
-        
+
         # Validate registry config
         if self.registry.backend not in ["memory", "redis", "kafka"]:
             raise ConfigurationError(
                 f"Unsupported registry backend: {self.registry.backend}",
-                config_key="registry.backend"
+                config_key="registry.backend",
             )
-        
+
         # Validate security config
         if self.security.nonce_window <= 0:
             raise ConfigurationError(
-                "Nonce window must be positive",
-                config_key="security.nonce_window"
+                "Nonce window must be positive", config_key="security.nonce_window"
             )
-        
+
         if self.security.max_chain_length <= 0:
             raise ConfigurationError(
                 "Max chain length must be positive",
-                config_key="security.max_chain_length"
+                config_key="security.max_chain_length",
             )
-        
+
         # Validate monitoring config
         if self.monitoring.metrics_port == self.monitoring.dashboard_port:
             raise ConfigurationError(
                 "Metrics and dashboard ports must be different",
-                config_key="monitoring.ports"
+                config_key="monitoring.ports",
             )
 
 
 def load_config(
     config_path: Optional[Union[str, Path]] = None,
-    env_file: Optional[Union[str, Path]] = None
+    env_file: Optional[Union[str, Path]] = None,
 ) -> TrustChainConfig:
     """
     Load configuration from file and environment variables.
-    
+
     Args:
         config_path: Path to YAML config file
         env_file: Path to .env file
-    
+
     Returns:
         TrustChainConfig instance
     """
@@ -193,95 +197,119 @@ def load_config(
         load_dotenv(env_file)
     else:
         load_dotenv()  # Load from .env in current directory
-    
+
     config_data: Dict[str, Any] = {}
-    
+
     # Load from YAML file if provided
     if config_path:
         config_path = Path(config_path)
         if not config_path.exists():
             raise ConfigurationError(f"Config file not found: {config_path}")
-        
+
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 file_config = yaml.safe_load(f) or {}
                 config_data.update(file_config)
         except yaml.YAMLError as e:
             raise ConfigurationError(f"Invalid YAML config: {e}")
-    
+
     # Override with environment variables
     env_config = _load_from_env()
     _deep_merge(config_data, env_config)
-    
+
     # Create and validate config
     config = TrustChainConfig.from_dict(config_data)
     config.validate()
-    
+
     return config
 
 
 def _load_from_env() -> Dict[str, Any]:
     """Load configuration from environment variables."""
     config = {}
-    
+
     # Crypto config
     if os.getenv("TRUSTCHAIN_CRYPTO_ALGORITHM"):
-        config.setdefault("crypto", {})["algorithm"] = os.getenv("TRUSTCHAIN_CRYPTO_ALGORITHM")
-    
+        config.setdefault("crypto", {})["algorithm"] = os.getenv(
+            "TRUSTCHAIN_CRYPTO_ALGORITHM"
+        )
+
     # Registry config
     if os.getenv("TRUSTCHAIN_REGISTRY_BACKEND"):
-        config.setdefault("registry", {})["backend"] = os.getenv("TRUSTCHAIN_REGISTRY_BACKEND")
-    
+        config.setdefault("registry", {})["backend"] = os.getenv(
+            "TRUSTCHAIN_REGISTRY_BACKEND"
+        )
+
     if os.getenv("TRUSTCHAIN_REGISTRY_URL"):
         config.setdefault("registry", {})["url"] = os.getenv("TRUSTCHAIN_REGISTRY_URL")
-    
+
     if os.getenv("REDIS_URL"):
         config.setdefault("registry", {})["url"] = os.getenv("REDIS_URL")
-    
+
     if os.getenv("REDIS_HOST"):
         config.setdefault("registry", {})["redis_host"] = os.getenv("REDIS_HOST")
-    
+
     if os.getenv("REDIS_PORT"):
         config.setdefault("registry", {})["redis_port"] = int(os.getenv("REDIS_PORT"))
-    
+
     if os.getenv("REDIS_PASSWORD"):
-        config.setdefault("registry", {})["redis_password"] = os.getenv("REDIS_PASSWORD")
-    
+        config.setdefault("registry", {})["redis_password"] = os.getenv(
+            "REDIS_PASSWORD"
+        )
+
     if os.getenv("KAFKA_BOOTSTRAP_SERVERS"):
-        config.setdefault("registry", {})["kafka_bootstrap_servers"] = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-    
+        config.setdefault("registry", {})["kafka_bootstrap_servers"] = os.getenv(
+            "KAFKA_BOOTSTRAP_SERVERS"
+        )
+
     # Security config
     if os.getenv("TRUSTCHAIN_NONCE_WINDOW"):
-        config.setdefault("security", {})["nonce_window"] = int(os.getenv("TRUSTCHAIN_NONCE_WINDOW"))
-    
+        config.setdefault("security", {})["nonce_window"] = int(
+            os.getenv("TRUSTCHAIN_NONCE_WINDOW")
+        )
+
     if os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH"):
-        config.setdefault("security", {})["max_chain_length"] = int(os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH"))
-    
+        config.setdefault("security", {})["max_chain_length"] = int(
+            os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH")
+        )
+
     # Monitoring config
     if os.getenv("TRUSTCHAIN_MONITORING_ENABLED"):
-        enabled = os.getenv("TRUSTCHAIN_MONITORING_ENABLED").lower() in ("true", "1", "yes")
+        enabled = os.getenv("TRUSTCHAIN_MONITORING_ENABLED").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
         config.setdefault("monitoring", {})["enabled"] = enabled
-    
+
     if os.getenv("TRUSTCHAIN_METRICS_PORT"):
-        config.setdefault("monitoring", {})["metrics_port"] = int(os.getenv("TRUSTCHAIN_METRICS_PORT"))
-    
+        config.setdefault("monitoring", {})["metrics_port"] = int(
+            os.getenv("TRUSTCHAIN_METRICS_PORT")
+        )
+
     if os.getenv("TRUSTCHAIN_DASHBOARD_PORT"):
-        config.setdefault("monitoring", {})["dashboard_port"] = int(os.getenv("TRUSTCHAIN_DASHBOARD_PORT"))
-    
+        config.setdefault("monitoring", {})["dashboard_port"] = int(
+            os.getenv("TRUSTCHAIN_DASHBOARD_PORT")
+        )
+
     if os.getenv("PROMETHEUS_ENDPOINT"):
-        config.setdefault("monitoring", {})["prometheus_endpoint"] = os.getenv("PROMETHEUS_ENDPOINT")
-    
+        config.setdefault("monitoring", {})["prometheus_endpoint"] = os.getenv(
+            "PROMETHEUS_ENDPOINT"
+        )
+
     if os.getenv("GRAFANA_API_KEY"):
-        config.setdefault("monitoring", {})["grafana_api_key"] = os.getenv("GRAFANA_API_KEY")
-    
+        config.setdefault("monitoring", {})["grafana_api_key"] = os.getenv(
+            "GRAFANA_API_KEY"
+        )
+
     # Global config
     if os.getenv("TRUSTCHAIN_DEBUG"):
         debug = os.getenv("TRUSTCHAIN_DEBUG").lower() in ("true", "1", "yes")
         config["debug"] = debug
-    
+
     if os.getenv("TRUSTCHAIN_ENVIRONMENT"):
         config["environment"] = os.getenv("TRUSTCHAIN_ENVIRONMENT")
-    
+
     return config
 
 
@@ -297,12 +325,12 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> None:
 def save_config(config: TrustChainConfig, path: Union[str, Path]) -> None:
     """Save configuration to YAML file."""
     path = Path(path)
-    
+
     # Create directory if it doesn't exist
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     try:
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             yaml.dump(config.to_dict(), f, default_flow_style=False, indent=2)
     except Exception as e:
         raise ConfigurationError(f"Failed to save config: {e}")
@@ -316,4 +344,4 @@ def get_default_config() -> TrustChainConfig:
 def create_config_template(path: Union[str, Path]) -> None:
     """Create a template configuration file."""
     config = get_default_config()
-    save_config(config, path) 
+    save_config(config, path)

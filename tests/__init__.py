@@ -1,1 +1,1 @@
-"""Tests for TrustChain library.""" 
+"""Tests for TrustChain library."""

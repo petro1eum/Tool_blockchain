@@ -84,7 +84,7 @@ except ImportError:
 __all__ = [
     # Core classes
     "SignedResponse",
-    "TrustMetadata", 
+    "TrustMetadata",
     "ChainLink",
     "VerificationResult",
     "SignatureAlgorithm",
@@ -96,28 +96,23 @@ __all__ = [
     "Ed25519KeyPair",
     "get_crypto_engine",
     "NonceManager",
-    
     # Tool framework
     "TrustedTool",
     "trusted_tool",
     "BaseTrustedTool",
-    
     # Registry backends
     "TrustRegistry",
     "MemoryRegistry",
     "RedisRegistry",  # May be None
     "KafkaRegistry",  # May be None
-    
     # Integrations
     "make_langchain_tool",  # May be None
     "OpenAITrustedFunction",  # May be None
-    
     # Monitoring
     "PrometheusMetrics",  # May be None
-    
     # Exceptions
     "TrustChainError",
-    "SignatureVerificationError", 
+    "SignatureVerificationError",
     "NonceReplayError",
     "KeyNotFoundError",
     "ChainIntegrityError",
@@ -126,9 +121,11 @@ __all__ = [
 # Version info
 VERSION_INFO = tuple(map(int, __version__.split(".")))
 
+
 def get_version() -> str:
     """Get the current version string."""
     return __version__
+
 
 def check_dependencies() -> dict:
     """Check which optional dependencies are available."""
@@ -138,4 +135,4 @@ def check_dependencies() -> dict:
         "langchain": make_langchain_tool is not None,
         "openai": OpenAITrustedFunction is not None,
         "monitoring": PrometheusMetrics is not None,
-    } 
+    }

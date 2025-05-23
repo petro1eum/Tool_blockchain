@@ -5,11 +5,11 @@ from trustchain.utils.config import *
 
 __all__ = [
     "TrustChainError",
-    "SignatureVerificationError", 
+    "SignatureVerificationError",
     "NonceReplayError",
     "KeyNotFoundError",
     "ChainIntegrityError",
     "ConfigurationError",
     "TrustChainConfig",
     "load_config",
-] 
+]
