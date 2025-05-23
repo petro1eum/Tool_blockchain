@@ -133,25 +133,9 @@ async def main():
     print("🔗 TrustChain Basic Usage Example")
     print("=" * 50)
     
-    # Initialize TrustChain for the example
-    print("\n🔧 Initializing TrustChain...")
-    try:
-        from trustchain.core.signatures import get_signature_engine, SignatureEngine, set_signature_engine
-        from trustchain.registry.memory import MemoryRegistry
-        
-        # Check if signature engine exists, if not create one
-        engine = get_signature_engine()
-        if engine is None or engine.trust_registry is None:
-            registry = MemoryRegistry()
-            await registry.start()
-            engine = SignatureEngine(registry)
-            set_signature_engine(engine)
-            print("   ✅ Signature engine initialized with registry")
-        else:
-            print("   ✅ Signature engine already available")
-    except Exception as e:
-        print(f"   ⚠️  Signature engine setup failed: {e}")
-        print("   📝 Examples will run without signature verification")
+    # TrustChain should work out of the box - no setup needed!
+    print("\n🔧 TrustChain auto-initialization...")
+    print("   ✅ Library ready - signatures will be created and verified automatically")
 
     # Example 1: Weather API
     print("\n1. Weather API Example:")

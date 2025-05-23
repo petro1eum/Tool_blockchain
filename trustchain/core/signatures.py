@@ -93,6 +93,120 @@ class KeyPairSigner(Signer):
         return self.key_pair.key_id
 
 
+class InMemoryVerifier(Verifier):
+    """Simple in-memory verifier that works with signers in the same engine."""
+
+    def __init__(self, verifier_id: str):
+        self.verifier_id = verifier_id
+        self._signature_engine: Optional['SignatureEngine'] = None
+
+    def set_signature_engine(self, engine: 'SignatureEngine') -> None:
+        """Set reference to the signature engine."""
+        self._signature_engine = engine
+
+    def verify(
+        self, data: Dict[str, Any], signature: SignatureInfo
+    ) -> VerificationResult:
+        """Verify signature using available signers."""
+        start_time = time.time()
+
+        if not self._signature_engine:
+            return VerificationResult.failure(
+                request_id=data.get("request_id", "unknown"),
+                tool_id=data.get("tool_id", "unknown"),
+                signature_id=signature.public_key_id,
+                verifier_id=self.verifier_id,
+                error_code="NO_ENGINE",
+                error_message="No signature engine available",
+                algorithm=signature.algorithm,
+            )
+
+        # Find a signer with matching public key
+        for signer_id, signer in self._signature_engine._signers.items():
+            if isinstance(signer, KeyPairSigner):
+                if signer.key_pair.key_id == signature.public_key_id:
+                    # Found matching signer, verify signature
+                    try:
+                        # Recreate canonical data and hash
+                        import json
+                        canonical_data = json.dumps(data, sort_keys=True, separators=(",", ":"))
+                        
+                        # Get expected hash
+                        crypto_engine = get_crypto_engine()
+                        expected_hash = crypto_engine.hash_data(canonical_data)
+                        
+                        if expected_hash != signature.signed_hash:
+                            return VerificationResult.failure(
+                                request_id=data.get("request_id", "unknown"),
+                                tool_id=data.get("tool_id", "unknown"),
+                                signature_id=signature.public_key_id,
+                                verifier_id=self.verifier_id,
+                                error_code="HASH_MISMATCH",
+                                error_message="Data hash does not match signed hash",
+                                algorithm=signature.algorithm,
+                            )
+
+                        # Verify signature
+                        hash_bytes = signature.signed_hash.split(":", 1)[1].encode()
+                        signature_bytes = base64.b64decode(signature.signature)
+                        
+                        is_valid = signer.key_pair.verify(hash_bytes, signature_bytes)
+                        
+                        if is_valid:
+                            return VerificationResult.success(
+                                request_id=data.get("request_id", "unknown"),
+                                tool_id=data.get("tool_id", "unknown"),
+                                signature_id=signature.public_key_id,
+                                verifier_id=self.verifier_id,
+                                algorithm=signature.algorithm,
+                                trust_level=TrustLevel.MEDIUM,
+                                verification_time_ms=(time.time() - start_time) * 1000,
+                            )
+                        else:
+                            return VerificationResult.failure(
+                                request_id=data.get("request_id", "unknown"),
+                                tool_id=data.get("tool_id", "unknown"),
+                                signature_id=signature.public_key_id,
+                                verifier_id=self.verifier_id,
+                                error_code="INVALID_SIGNATURE",
+                                error_message="Signature verification failed",
+                                algorithm=signature.algorithm,
+                            )
+                    except Exception as e:
+                        return VerificationResult.failure(
+                            request_id=data.get("request_id", "unknown"),
+                            tool_id=data.get("tool_id", "unknown"),
+                            signature_id=signature.public_key_id,
+                            verifier_id=self.verifier_id,
+                            error_code="VERIFICATION_ERROR",
+                            error_message=f"Verification error: {e}",
+                            algorithm=signature.algorithm,
+                        )
+
+        # No matching signer found
+        return VerificationResult.failure(
+            request_id=data.get("request_id", "unknown"),
+            tool_id=data.get("tool_id", "unknown"),
+            signature_id=signature.public_key_id,
+            verifier_id=self.verifier_id,
+            error_code="NO_SIGNER",
+            error_message="No matching signer found for this signature",
+            algorithm=signature.algorithm,
+        )
+
+    def can_verify(self, signature: SignatureInfo) -> bool:
+        """Check if this verifier can verify the signature."""
+        if not self._signature_engine:
+            return False
+        
+        # Check if we have a signer with matching key
+        for signer in self._signature_engine._signers.values():
+            if isinstance(signer, KeyPairSigner):
+                if signer.key_pair.key_id == signature.public_key_id:
+                    return True
+        return False
+
+
 class TrustRegistryVerifier(Verifier):
     """Verifier that uses a trust registry to get public keys - SIMPLIFIED VERSION."""
 
@@ -170,6 +284,11 @@ class SignatureEngine:
         # Set up default verifier if trust registry is provided
         if trust_registry:
             self._default_verifier = TrustRegistryVerifier(trust_registry, "default")
+            self._verifiers["default"] = self._default_verifier
+        else:
+            # Create a simple in-memory verifier for standalone operation
+            self._default_verifier = InMemoryVerifier("default")
+            self._default_verifier.set_signature_engine(self)
             self._verifiers["default"] = self._default_verifier
 
     def register_signer(self, signer_id: str, signer: Signer) -> None:
