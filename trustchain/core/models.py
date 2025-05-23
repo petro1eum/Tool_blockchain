@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class SignatureAlgorithm(str, Enum):
@@ -44,7 +44,8 @@ class RequestContext(BaseModel):
     parent_request_id: Optional[str] = None
     chain_id: Optional[str] = None
     
-    @validator('timestamp')
+    @field_validator('timestamp')
+    @classmethod
     def validate_timestamp(cls, v):
         """Ensure timestamp is reasonable."""
         now = int(time.time() * 1000)
@@ -52,7 +53,8 @@ class RequestContext(BaseModel):
             raise ValueError("Timestamp too far from current time")
         return v
     
-    @validator('request_id', 'nonce')
+    @field_validator('request_id', 'nonce')
+    @classmethod
     def validate_ids(cls, v):
         """Ensure IDs are non-empty strings."""
         if not v or not isinstance(v, str):
@@ -70,14 +72,16 @@ class SignatureInfo(BaseModel):
     signature_format: SignatureFormat = SignatureFormat.BASE64
     created_at: int = Field(default_factory=lambda: int(time.time() * 1000))
     
-    @validator('signature', 'signed_hash')
+    @field_validator('signature', 'signed_hash')
+    @classmethod
     def validate_non_empty(cls, v):
         """Ensure critical fields are non-empty."""
         if not v or not isinstance(v, str):
             raise ValueError("Field must be a non-empty string")
         return v
     
-    @validator('signed_hash')
+    @field_validator('signed_hash')
+    @classmethod
     def validate_hash_format(cls, v):
         """Ensure hash is in format 'algorithm:hash'."""
         if ':' not in v:
@@ -95,7 +99,8 @@ class TrustMetadata(BaseModel):
     verification_chain: List[str] = Field(default_factory=list)
     compliance_flags: Dict[str, bool] = Field(default_factory=dict)
     
-    @validator('verification_timestamp')
+    @field_validator('verification_timestamp')
+    @classmethod
     def set_verification_time(cls, v):
         """Set verification timestamp if verified."""
         if v is None:
@@ -114,23 +119,26 @@ class ChainLink(BaseModel):
     timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
-    @validator('step_number')
+    @field_validator('step_number')
+    @classmethod
     def validate_step_number(cls, v):
         """Ensure step number is non-negative."""
         if v < 0:
             raise ValueError("Step number must be non-negative")
         return v
     
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode='before')
+    @classmethod
     def validate_chain_logic(cls, values):
         """Validate chain link logic."""
-        step_number = values.get('step_number')
-        parent_hash = values.get('parent_hash')
-        
-        if step_number == 0 and parent_hash is not None:
-            raise ValueError("First step cannot have parent hash")
-        if step_number > 0 and parent_hash is None:
-            raise ValueError("Non-first step must have parent hash")
+        if isinstance(values, dict):
+            step_number = values.get('step_number')
+            parent_hash = values.get('parent_hash')
+            
+            if step_number == 0 and parent_hash is not None:
+                raise ValueError("First step cannot have parent hash")
+            if step_number > 0 and parent_hash is None:
+                raise ValueError("Non-first step must have parent hash")
         
         return values
 
@@ -156,14 +164,15 @@ class SignedResponse(BaseModel):
     version: str = "1.0"
     compliance_metadata: Dict[str, Any] = Field(default_factory=dict)
     
-    class Config:
-        """Pydantic configuration."""
-        arbitrary_types_allowed = True
-        json_encoders = {
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={
             datetime: lambda v: v.isoformat(),
         }
+    )
     
-    @validator('data')
+    @field_validator('data')
+    @classmethod
     def validate_data(cls, v):
         """Ensure data is serializable."""
         try:
@@ -301,11 +310,14 @@ class KeyMetadata(BaseModel):
     last_used: Optional[int] = None
     key_rotation_id: Optional[str] = None
     
-    @validator('valid_until')
-    def validate_validity_period(cls, v, values):
+    @field_validator('valid_until')
+    @classmethod
+    def validate_validity_period(cls, v, info):
         """Ensure validity period is logical."""
-        if v is not None and v <= values.get('valid_from', 0):
-            raise ValueError("valid_until must be after valid_from")
+        if v is not None and hasattr(info, 'data') and info.data:
+            valid_from = info.data.get('valid_from', 0)
+            if v <= valid_from:
+                raise ValueError("valid_until must be after valid_from")
         return v
     
     @property
@@ -337,10 +349,13 @@ class NonceEntry(BaseModel):
     caller_id: Optional[str] = None
     expires_at: int
     
-    @validator('expires_at')
-    def validate_expiration(cls, v, values):
+    @field_validator('expires_at')
+    @classmethod
+    def validate_expiration(cls, v, info):
         """Ensure expiration is in the future."""
-        timestamp = values.get('timestamp', int(time.time() * 1000))
+        timestamp = int(time.time() * 1000)
+        if hasattr(info, 'data') and info.data:
+            timestamp = info.data.get('timestamp', timestamp)
         if v <= timestamp:
             raise ValueError("Expiration must be in the future")
         return v
@@ -368,7 +383,8 @@ class ChainMetadata(BaseModel):
     integrity_verified: bool = False
     last_verification: Optional[int] = None
     
-    @validator('steps')
+    @field_validator('steps')
+    @classmethod
     def validate_step_sequence(cls, v):
         """Ensure steps are in correct sequence."""
         for i, step in enumerate(v):

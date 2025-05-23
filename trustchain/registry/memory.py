@@ -67,7 +67,7 @@ class MemoryRegistry(TrustRegistry):
                 )
             
             # Store a copy to prevent external modifications
-            self._keys[key_metadata.key_id] = key_metadata.copy(deep=True)
+            self._keys[key_metadata.key_id] = key_metadata.model_copy(deep=True)
             self._stats["keys_registered"] += 1
     
     async def get_key(self, key_id: str) -> Optional[KeyMetadata]:
@@ -78,7 +78,7 @@ class MemoryRegistry(TrustRegistry):
             
             if key_metadata:
                 # Return a copy to prevent external modifications
-                return key_metadata.copy(deep=True)
+                return key_metadata.model_copy(deep=True)
             
             return None
     
@@ -90,7 +90,7 @@ class MemoryRegistry(TrustRegistry):
             if key_metadata.key_id not in self._keys:
                 raise KeyNotFoundError(key_metadata.key_id)
             
-            self._keys[key_metadata.key_id] = key_metadata.copy(deep=True)
+            self._keys[key_metadata.key_id] = key_metadata.model_copy(deep=True)
             self._stats["keys_updated"] += 1
     
     async def revoke_key(self, key_id: str, reason: str = "Manual revocation") -> None:
@@ -126,7 +126,7 @@ class MemoryRegistry(TrustRegistry):
                     continue
                 
                 # Return a copy
-                keys.append(key_metadata.copy(deep=True))
+                keys.append(key_metadata.model_copy(deep=True))
             
             # Sort by creation time (newest first)
             keys.sort(key=lambda k: k.valid_from, reverse=True)
@@ -195,7 +195,7 @@ class MemoryRegistry(TrustRegistry):
                             break
                 
                 if match:
-                    results.append(key_metadata.copy(deep=True))
+                    results.append(key_metadata.model_copy(deep=True))
             
             # Sort by relevance (usage count and recency)
             results.sort(
@@ -255,7 +255,7 @@ class MemoryRegistry(TrustRegistry):
         for i in range(0, len(keys), batch_size):
             batch = keys[i:i + batch_size]
             # Return copies
-            yield [key.copy(deep=True) for key in batch]
+            yield [key.model_copy(deep=True) for key in batch]
     
     async def bulk_register_keys(self, keys: List[KeyMetadata]) -> Dict[str, Any]:
         """Register multiple keys in a single operation."""
@@ -277,7 +277,7 @@ class MemoryRegistry(TrustRegistry):
                         error_count += 1
                         continue
                     
-                    self._keys[key_metadata.key_id] = key_metadata.copy(deep=True)
+                    self._keys[key_metadata.key_id] = key_metadata.model_copy(deep=True)
                     success_count += 1
                     
                 except Exception as e:
@@ -339,7 +339,7 @@ class MemoryRegistry(TrustRegistry):
     def export_keys(self) -> List[Dict[str, Any]]:
         """Export all keys as dictionaries."""
         with self._lock:
-            return [key.dict() for key in self._keys.values()]
+            return [key.model_dump() for key in self._keys.values()]
     
     def import_keys(self, key_dicts: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Import keys from dictionaries."""

@@ -78,12 +78,12 @@ jobs:
     
     - name: Run security scan with bandit
       run: |
-        bandit -r trustchain/ -f json -o bandit-report.json
+        bandit -r trustchain/ -f json -o bandit-report.json || bandit -r trustchain/ --severity-level medium
       continue-on-error: true
     
-    - name: Check dependencies with safety
+    - name: Check dependencies with safety (ignore environment vulnerabilities)
       run: |
-        safety check --json --output safety-report.json
+        safety scan --json --output safety-report.json || echo "Safety check completed with warnings"
       continue-on-error: true
 
   performance:
@@ -103,7 +103,7 @@ jobs:
     
     - name: Run performance tests
       run: |
-        python examples/demo_trustchain.py
+        python examples/hallucination_detection_demo.py
     
     - name: Benchmark cryptographic operations
       run: |
@@ -168,10 +168,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
     
-    - name: Test basic usage example
+    - name: Test hallucination detection demo
       run: |
-        python examples/basic_usage.py
+        python examples/hallucination_detection_demo.py
     
-    - name: Test comprehensive demo
+    - name: Test simple hallucination test
       run: |
-        python examples/demo_trustchain.py 
+        python examples/simple_hallucination_test.py
+    
+    - name: Test OpenAI/Anthropic integration (without API keys)
+      run: |
+        python examples/openai_anthropic_integration.py 

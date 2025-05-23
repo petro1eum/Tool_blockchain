@@ -193,7 +193,7 @@ class AnthropicClient:
 
 # ==================== TESTS ====================
 
-class TestRealLLMClean:
+class LLMTestSuite:
     """Clean tests with real LLMs - no hacks needed!"""
     
     def __init__(self):
@@ -356,7 +356,7 @@ class TestRealLLMClean:
 @pytest.fixture
 async def llm_test_suite():
     """Pytest fixture for LLM tests."""
-    suite = TestRealLLMClean()
+    suite = LLMTestSuite()
     await suite.setup()
     yield suite
     await suite.cleanup()
@@ -390,7 +390,7 @@ async def test_no_setup_required(llm_test_suite):
 
 async def main():
     """Run the clean LLM tests."""
-    test_suite = TestRealLLMClean()
+    test_suite = LLMTestSuite()
     success = await test_suite.run_all_tests()
     
     if success:
