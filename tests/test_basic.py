@@ -252,13 +252,15 @@ class TestNonceManagement:
         """Test nonce validation."""
         from trustchain.core.nonce import NonceValidator
         
-        # Valid nonces
-        assert NonceValidator.validate_format("abc123")
+        # Valid nonces (must be at least 8 chars)
+        assert NonceValidator.validate_format("abc12345")  # Exactly 8 chars
         assert NonceValidator.validate_format("uuid-like-string-123")
+        assert NonceValidator.validate_format("long_nonce_string_12345")
         
         # Invalid nonces
         assert not NonceValidator.validate_format("")
         assert not NonceValidator.validate_format("a")  # Too short
+        assert not NonceValidator.validate_format("abc123")  # Too short (6 chars)
         assert not NonceValidator.validate_format("invalid characters!")
     
     async def test_replay_protection(self, registry):
