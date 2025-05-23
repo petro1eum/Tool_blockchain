@@ -50,10 +50,17 @@ TrustChain is a **zero-trust framework** for creating cryptographically signed A
 
 ## 🚀 Quick Start
 
+### 📖 For OpenAI & Anthropic Users
+**🎯 If you're using OpenAI or Anthropic APIs** - start here:
+- **[📘 Simple Usage Guide](SIMPLE_USAGE_GUIDE.md)** - 5-minute setup guide
+- **[🔗 Integration Examples](examples/README_INTEGRATION.md)** - Ready-to-use code
+
 ### Installation
 
 ```bash
 pip install trustchain
+# or
+pip install git+https://github.com/petro1eum/Tool_blockchain.git
 ```
 
 ### Basic Usage
