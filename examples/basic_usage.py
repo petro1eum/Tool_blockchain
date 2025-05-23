@@ -132,6 +132,26 @@ async def main():
     """Main example function."""
     print("🔗 TrustChain Basic Usage Example")
     print("=" * 50)
+    
+    # Initialize TrustChain for the example
+    print("\n🔧 Initializing TrustChain...")
+    try:
+        from trustchain.core.signatures import get_signature_engine, SignatureEngine, set_signature_engine
+        from trustchain.registry.memory import MemoryRegistry
+        
+        # Check if signature engine exists, if not create one
+        engine = get_signature_engine()
+        if engine is None or engine.trust_registry is None:
+            registry = MemoryRegistry()
+            await registry.start()
+            engine = SignatureEngine(registry)
+            set_signature_engine(engine)
+            print("   ✅ Signature engine initialized with registry")
+        else:
+            print("   ✅ Signature engine already available")
+    except Exception as e:
+        print(f"   ⚠️  Signature engine setup failed: {e}")
+        print("   📝 Examples will run without signature verification")
 
     # Example 1: Weather API
     print("\n1. Weather API Example:")
@@ -182,15 +202,22 @@ async def main():
 
     # Example 6: Verify signatures manually
     print("\n6. Manual Signature Verification:")
-    from trustchain.core.signatures import get_signature_engine
+    try:
+        from trustchain.core.signatures import get_signature_engine
 
-    signature_engine = get_signature_engine()
-    if signature_engine:
-        verification_result = signature_engine.verify_response(weather_response)
-        print(f"   Verification valid: {verification_result.valid}")
-        print(f"   Algorithm used: {verification_result.algorithm_used.value}")
-        print(f"   Trust level: {verification_result.trust_level.value}")
-        print(f"   Verification time: {verification_result.verification_time_ms:.2f}ms")
+        signature_engine = get_signature_engine()
+        if signature_engine:
+            verification_result = signature_engine.verify_response(weather_response)
+            print(f"   Verification valid: {verification_result.valid}")
+            print(f"   Algorithm used: {verification_result.algorithm_used.value}")
+            print(f"   Trust level: {verification_result.trust_level.value}")
+            print(f"   Verification time: {verification_result.verification_time_ms:.2f}ms")
+        else:
+            print("   Signature engine not available - using built-in verification")
+            print(f"   Response verified: {weather_response.is_verified}")
+    except Exception as e:
+        print(f"   Manual verification skipped: {e}")
+        print(f"   Response verified: {weather_response.is_verified}")
 
     # Example 7: Error handling
     print("\n7. Error Handling Example:")
