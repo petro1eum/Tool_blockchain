@@ -1,6 +1,7 @@
 """Base classes for trusted tools in TrustChain."""
 
 import asyncio
+import sys
 import time
 import uuid
 from abc import ABC, abstractmethod
@@ -200,6 +201,7 @@ class BaseTrustedTool(ABC):
                 tool_id=self.tool_id,
                 data=result,
                 execution_time_ms=execution_time_ms,
+                trust_level=self.trust_level,
             )
 
             # Verify the signature if requested

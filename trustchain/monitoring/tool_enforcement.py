@@ -18,7 +18,6 @@ from trustchain.core.signatures import SignatureEngine
 from trustchain.tools.base import BaseTrustedTool
 from trustchain.monitoring.hallucination_detector import (
     HallucinatedClaim, 
-    ClaimExtractor,
     ValidationResult
 )
 from trustchain.utils.exceptions import TrustChainError
@@ -60,54 +59,32 @@ class ToolExecution:
             "verified": self.verified
         }
 
-    def matches_claim(self, claim: HallucinatedClaim) -> float:
-        """Calculate similarity score between this execution and a claim (0.0-1.0)."""
-        score = 0.0
+    def contains_data(self, response: str) -> bool:
+        """Simple but strict check: does response contain the EXACT data from this execution?"""
+        response_lower = response.lower()
         
-        # Tool name matching (very important)
-        if claim.tool_name:
-            if claim.tool_name.lower() in self.tool_name.lower():
-                score += 0.5
-            elif any(part in self.tool_name.lower() for part in claim.tool_name.lower().split('_')):
-                score += 0.3
+        # Must match tool name AND result data for strong confidence
+        tool_match = self.tool_name.lower() in response_lower
         
-        # API reference patterns
-        claim_text_lower = claim.claim_text.lower()
-        
-        # Check for API/tool references in claim
-        if any(keyword in claim_text_lower for keyword in ['api', 'tool', 'checked', 'retrieved', 'called']):
-            if 'weather' in claim_text_lower and 'weather' in self.tool_name.lower():
-                score += 0.4
-            elif 'stock' in claim_text_lower and 'stock' in self.tool_name.lower():
-                score += 0.4
-            elif 'news' in claim_text_lower and 'news' in self.tool_name.lower():
-                score += 0.4
-        
-        # Input context matching (location, symbol, etc.)
-        input_text = str(self.tool_input).lower()
-        if input_text in claim_text_lower or any(word in claim_text_lower for word in input_text.split() if len(word) > 2):
-            score += 0.3
-        
-        # Result data matching
-        if isinstance(self.result, dict):
-            result_values = []
-            for value in self.result.values():
-                if isinstance(value, (str, int, float)):
-                    result_values.append(str(value).lower())
+        result_match = False
+        if self.result and isinstance(self.result, dict):
+            # Count how many result values are mentioned
+            matches = 0
+            total_values = 0
             
-            # Check if any result values appear in the claim
-            for value in result_values:
-                if value in claim_text_lower:
-                    score += 0.2
-                    break
+            for key, value in self.result.items():
+                value_str = str(value).lower()
+                total_values += 1
+                value_in_response = len(value_str) >= 2 and value_str in response_lower
+                if value_in_response:
+                    matches += 1
+            
+            # Require at least 50% of result values to match
+            if total_values > 0:
+                result_match = (matches / total_values) >= 0.5
         
-        # Temporal proximity bonus (claims about recent executions more likely to match)
-        import time
-        time_diff = abs(time.time() - self.timestamp)
-        if time_diff < 10:  # Within 10 seconds
-            score += 0.1
-        
-        return min(score, 1.0)
+        # Both tool name and significant result data must match
+        return tool_match and result_match
 
 
 class ToolExecutionRegistry:
@@ -134,22 +111,18 @@ class ToolExecutionRegistry:
             if len(self.recent_executions) > 100:
                 self.recent_executions = self.recent_executions[:100]
     
-    def find_matching_executions(self, claim: HallucinatedClaim, 
-                                min_score: float = 0.4) -> List[Tuple[ToolExecution, float]]:
-        """Find executions that might match a claim."""
+    def find_executions_for_response(self, response: str) -> List[ToolExecution]:
+        """Simple: find executions that contain data mentioned in response."""
         matches = []
         
         with self._lock:
             # Check recent executions first (most likely to match)
             for request_id in self.recent_executions[:20]:  # Check last 20
                 execution = self.executions.get(request_id)
-                if execution:
-                    score = execution.matches_claim(claim)
-                    if score >= min_score:
-                        matches.append((execution, score))
+                if execution and execution.contains_data(response):
+                    matches.append(execution)
         
-        # Sort by score (highest first)
-        return sorted(matches, key=lambda x: x[1], reverse=True)
+        return matches
     
     def get_execution(self, request_id: str) -> Optional[ToolExecution]:
         """Get execution by request ID."""
@@ -214,7 +187,14 @@ class ToolExecutionEnforcer:
                 import inspect
                 if inspect.iscoroutine(result):
                     import asyncio
-                    result = asyncio.get_event_loop().run_until_complete(result)
+                    try:
+                        # Try to get running loop
+                        loop = asyncio.get_running_loop()
+                        # We're in an async context, can't use run_until_complete
+                        raise RuntimeError("Cannot execute async tool from sync enforcer in async context")
+                    except RuntimeError:
+                        # No running loop, safe to use run_until_complete
+                        result = asyncio.get_event_loop().run_until_complete(result)
             else:
                 # Fallback for function-based tools
                 result = tool(tool_input)
@@ -270,17 +250,16 @@ class ToolExecutionEnforcer:
             self.registry.register_execution(execution)
             raise
     
+    def has_signed_data_for_response(self, response: str) -> bool:
+        """Simple check: does response contain data from any registered execution?"""
+        executions = self.registry.find_executions_for_response(response)
+        return len(executions) > 0
+    
     def verify_claim_against_executions(self, claim: HallucinatedClaim) -> Optional[ToolExecution]:
-        """Verify if a claim matches any registered execution."""
-        matches = self.registry.find_matching_executions(claim, min_score=0.5)
-        
-        if matches:
-            # Return the best match if it's reasonably confident
-            best_execution, score = matches[0]
-            if score >= 0.5:  # Moderate confidence threshold
-                return best_execution
-        
-        return None
+        """Legacy method for backwards compatibility."""
+        # For the simplified system, check if claim text has any matching executions
+        executions = self.registry.find_executions_for_response(claim.claim_text)
+        return executions[0] if executions else None
 
 
 @dataclass
@@ -302,47 +281,43 @@ class VerificationProof:
 
 
 class ResponseVerifier:
-    """Verifies agent responses against recorded tool executions."""
+    """Simple verifier: check if response has signed data backing it."""
     
     def __init__(self, enforcer: ToolExecutionEnforcer):
         self.enforcer = enforcer
-        self.claim_extractor = ClaimExtractor()
         
     def verify_response(self, response: str) -> Tuple[str, List[VerificationProof], List[HallucinatedClaim]]:
-        """Verify a response and add proof markers."""
-        claims = self.claim_extractor.extract_claims(response)
+        """Simple verify: does response have backing signed data?"""
         proofs = []
         unverified_claims = []
         verified_response = response
         
-        for claim in claims:
-            execution = self.enforcer.verify_claim_against_executions(claim)
+        # Simple check: does response have any signed data backing it?
+        if self.enforcer.has_signed_data_for_response(response):
+            # Find relevant executions
+            executions = self.enforcer.registry.find_executions_for_response(response)
             
-            if execution:
-                # Create proof
-                confidence = execution.matches_claim(claim)
+            for execution in executions:
                 proof = VerificationProof(
-                    claim_text=claim.claim_text,
+                    claim_text=response,
                     execution=execution,
-                    confidence_score=confidence,
+                    confidence_score=1.0,  # Simple: either has signature or doesn't
                     verification_url=f"/verify/{execution.request_id}"
                 )
                 proofs.append(proof)
-                
-                # Add verification marker to response
-                marker = f" [✓ Verified: {execution.request_id[:8]}]"
-                verified_response = verified_response.replace(
-                    claim.claim_text,
-                    claim.claim_text + marker
-                )
-            else:
-                # Mark as unverified
-                unverified_claims.append(claim)
-                marker = " [❌ UNVERIFIED - POSSIBLE HALLUCINATION]"
-                verified_response = verified_response.replace(
-                    claim.claim_text,
-                    claim.claim_text + marker
-                )
+            
+            # Add verification marker
+            verified_response += f" [✓ Verified with {len(executions)} signed execution(s)]"
+        else:
+            # No signed data found
+            fake_claim = HallucinatedClaim(
+                claim_text=response,
+                tool_name=None,
+                claimed_result=response,
+                context="No signed data backing"
+            )
+            unverified_claims.append(fake_claim)
+            verified_response += " [❌ NO SIGNED DATA - POSSIBLE HALLUCINATION]"
         
         return verified_response, proofs, unverified_claims
     
@@ -421,6 +396,19 @@ def create_tool_enforcer(signature_engine: SignatureEngine, tools: List[BaseTrus
             enforcer.register_tool(tool)
     
     return enforcer
+
+
+def create_integrated_security_system(signature_engine: SignatureEngine, tools: List[BaseTrustedTool] = None):
+    """Create a complete integrated security system: enforcer + hallucination detector."""
+    from trustchain.monitoring.hallucination_detector import create_hallucination_detector
+    
+    # Create enforcer
+    enforcer = create_tool_enforcer(signature_engine, tools)
+    
+    # Create detector integrated with enforcer
+    detector = create_hallucination_detector(signature_engine, enforcer)
+    
+    return enforcer, detector
 
 
 def wrap_agent_with_enforcement(agent: Any, enforcer: ToolExecutionEnforcer, 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-🔗 TrustChain Real LLM API Examples
+🔗 TrustChain Real LLM API Examples (v2)
 
-This file contains examples of using TrustChain with real LLM APIs.
+This file contains examples of using TrustChain v2 with real LLM APIs.
 Set your API keys as environment variables to test with real providers.
 
 Environment variables needed:
@@ -18,12 +18,18 @@ import os
 import time
 from typing import Any, Dict
 
-from trustchain import TrustedTool, TrustLevel
+from trustchain.v2 import TrustChain, TrustChainConfig
+
+# Create TrustChain instance with high-security settings
+tc = TrustChain(TrustChainConfig(
+    enable_nonce=True,
+    cache_ttl=600,
+))
 
 # ==================== OPENAI REAL INTEGRATION ====================
 
 
-@TrustedTool("openai_real_api", trust_level=TrustLevel.MEDIUM)
+@tc.tool("openai_real_api")
 async def openai_chat_completion(
     prompt: str, model: str = "gpt-4o", max_tokens: int = 1000
 ) -> Dict[str, Any]:
@@ -85,7 +91,7 @@ async def openai_chat_completion(
 # ==================== ANTHROPIC REAL INTEGRATION ====================
 
 
-@TrustedTool("anthropic_real_api", trust_level=TrustLevel.MEDIUM)
+@tc.tool("anthropic_real_api")
 async def anthropic_claude_completion(
     prompt: str, model: str = "claude-3-sonnet-20240229", max_tokens: int = 1000
 ) -> Dict[str, Any]:
@@ -147,7 +153,7 @@ async def anthropic_claude_completion(
 # ==================== GOOGLE GEMINI REAL INTEGRATION ====================
 
 
-@TrustedTool("gemini_real_api", trust_level=TrustLevel.MEDIUM)
+@tc.tool("gemini_real_api")
 async def gemini_generate_content(
     prompt: str, model: str = "gemini-1.5-pro"
 ) -> Dict[str, Any]:
@@ -211,7 +217,7 @@ async def gemini_generate_content(
 # ==================== FINANCIAL ADVISOR WITH REAL LLMS ====================
 
 
-@TrustedTool("financial_advisor_multi_llm", trust_level=TrustLevel.CRITICAL)
+@tc.tool("financial_advisor_multi_llm")
 async def financial_advisor_consensus(
     query: str, portfolio_data: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -237,25 +243,19 @@ async def financial_advisor_consensus(
     providers_responses = {}
 
     # Try OpenAI
-    openai_response = await openai_chat_completion(
-        financial_prompt, verify_response=False
-    )
-    if "error" not in openai_response:
-        providers_responses["openai"] = openai_response
+    openai_response = await openai_chat_completion(financial_prompt)
+    if "error" not in openai_response.data:
+        providers_responses["openai"] = openai_response.data
 
     # Try Anthropic
-    anthropic_response = await anthropic_claude_completion(
-        financial_prompt, verify_response=False
-    )
-    if "error" not in anthropic_response:
-        providers_responses["anthropic"] = anthropic_response
+    anthropic_response = await anthropic_claude_completion(financial_prompt)
+    if "error" not in anthropic_response.data:
+        providers_responses["anthropic"] = anthropic_response.data
 
     # Try Gemini
-    gemini_response = await gemini_generate_content(
-        financial_prompt, verify_response=False
-    )
-    if "error" not in gemini_response:
-        providers_responses["gemini"] = gemini_response
+    gemini_response = await gemini_generate_content(financial_prompt)
+    if "error" not in gemini_response.data:
+        providers_responses["gemini"] = gemini_response.data
 
     # Create consensus analysis
     consensus = {
@@ -295,7 +295,7 @@ async def demonstrate_openai():
     response = await openai_chat_completion("Explain quantum computing in simple terms")
 
     print(f"✅ Response verified: {response.is_verified}")
-    print(f"🔐 Signature: {response.signature.signature[:32]}...")
+    print(f"🔐 Signature: {response.signature[:32]}...")
 
     if "error" in response.data:
         print(f"❌ Error: {response.data['error']}")
@@ -313,7 +313,7 @@ async def demonstrate_anthropic():
     )
 
     print(f"✅ Response verified: {response.is_verified}")
-    print(f"🔐 Signature: {response.signature.signature[:32]}...")
+    print(f"🔐 Signature: {response.signature[:32]}...")
 
     if "error" in response.data:
         print(f"❌ Error: {response.data['error']}")
@@ -329,7 +329,7 @@ async def demonstrate_gemini():
     response = await gemini_generate_content("Explain the importance of cybersecurity")
 
     print(f"✅ Response verified: {response.is_verified}")
-    print(f"🔐 Signature: {response.signature.signature[:32]}...")
+    print(f"🔐 Signature: {response.signature[:32]}...")
 
     if "error" in response.data:
         print(f"❌ Error: {response.data['error']}")
@@ -355,7 +355,7 @@ async def demonstrate_financial_advisor():
     )
 
     print(f"✅ Response verified: {response.is_verified}")
-    print(f"🔐 Signature: {response.signature.signature[:32]}...")
+    print(f"🔐 Signature: {response.signature[:32]}...")
     print(f"🤖 Providers consulted: {response.data['providers_consulted']}")
     print(f"📊 Consensus available: {response.data['consensus_available']}")
     print(f"💡 Recommendation: {response.data['recommendation']}")
@@ -388,8 +388,13 @@ def check_api_keys():
 
 async def main():
     """Main demonstration function."""
-    print("🔗 TrustChain Real LLM API Examples")
+    print("🔗 TrustChain Real LLM API Examples (v2)")
     print("=" * 50)
+    
+    print("\n✨ Using TrustChain v2 - Simpler and more powerful!")
+    print("   - No global state or complex setup")
+    print("   - Just @tc.tool() decorator")
+    print("   - Automatic signature verification")
 
     # Check API configuration
     has_api_keys = check_api_keys()
@@ -405,10 +410,17 @@ async def main():
     await demonstrate_gemini()
     await demonstrate_financial_advisor()
 
+    # Show statistics
+    print("\n📊 TrustChain v2 Statistics:")
+    stats = tc.get_stats()
+    print(f"   Total tools: {stats['total_tools']}")
+    print(f"   Total calls: {stats['total_calls']}")
+    print(f"   Cache size: {stats['cache_size']}")
+
     print("\n" + "=" * 50)
     print("🎉 All LLM integrations tested!")
     print("🔒 Every response was cryptographically signed and verified")
-    print("🛡️ TrustChain prevents AI hallucinations with crypto proof!")
+    print("🛡️ TrustChain v2 prevents AI hallucinations with crypto proof!")
 
 
 if __name__ == "__main__":

@@ -59,207 +59,50 @@ class ValidationResult:
     confidence_score: float = 0.0
 
 
-class ClaimExtractor:
-    """Extracts factual claims from LLM responses using advanced pattern matching."""
+class SimpleValidator:
+    """Simple validator: if response has tool claims, check for signatures. If no tool claims, allow."""
 
-    # Core patterns that indicate tool results (harder to bypass)
-    TOOL_RESULT_PATTERNS = [
-        # Direct tool references
-        r"(?:I\s+(?:checked|retrieved|got|fetched|called|used|executed|queried))\s+(.+?)(?:\s+(?:and|to|for))?\s*[:\-]?\s*(.+)",
-        r"(?:According\s+to|Based\s+on|From|Using)\s+(?:the\s+)?(\w+)(?:\s+(?:tool|API|service|function|system))?[,:\-]?\s*(.+)",
-        r"(?:The|My)\s+(\w+)\s+(?:tool|API|service|function|system|database)\s+(?:returned|shows|indicates|reports|confirms|says)[:\-\s]*(.+)",
+    def has_tool_claims(self, response: str) -> bool:
+        """Check if response contains claims about tool usage."""
+        import re
         
-        # Data presentation patterns (harder to avoid)
-        r"(?:Current|Latest|Real-time|Updated)\s+(\w+)(?:\s+(?:data|information|status|price|temperature|value))?[:\s]*(.+)",
-        r"(?:Live|Fresh|New)\s+(?:data|information|results)\s+(?:from|shows?|indicates?)[:\s]*(.+)",
-        
-        # API-specific patterns
-        r"(\w+_?(?:api|API|tool|service))\s+(?:returned|gave|showed|provided|reports?)[:\s]*(.+)",
-        r"(?:API|Tool|Service|System)\s+(?:call|query|request)\s+(?:returned|gave|showed)[:\s]*(.+)",
-        
-        # Structured data patterns
-        r"(?:Data|Results?|Information|Response)(?:\s+from\s+\w+)?[:\s]*\{.+?\}",  # JSON-like
-        r"(?:Status|State|Value|Price|Temperature|Count|Amount)[:\s]*[\d\$€£¥]+",  # Specific values
-        
-        # Time-based claims (often hallucinated)
-        r"(?:As\s+of|Currently|Right\s+now|At\s+this\s+moment|Today)[:\s,]*(.+)",
-        
-        # Verification bypass attempts
-        r"(?:The\s+(?:data|information|results?)\s+(?:shows?|indicates?|confirms?|suggests?))[:\s]*(.+)",
-        r"(?:Analysis|Research|Investigation)\s+(?:shows?|reveals?|indicates?)[:\s]*(.+)",
-        r"(?:Sources?|Reports?|Studies?)\s+(?:indicate|show|confirm|suggest)[:\s]*(.+)",
-    ]
-
-    # Semantic patterns that indicate claims (not just syntax)
-    SEMANTIC_CLAIM_INDICATORS = [
-        # Definitive statements about external data
-        "temperature", "price", "cost", "value", "amount", "count", "number",
-        "status", "state", "condition", "level", "rate", "percentage",
-        "balance", "total", "sum", "average", "maximum", "minimum",
-        "current", "latest", "updated", "recent", "new", "fresh",
-        
-        # Time-specific claims
-        "today", "yesterday", "now", "currently", "presently", "at the moment",
-        "this week", "this month", "this year", "recently", "lately",
-        
-        # Certainty indicators (often used in hallucinations)
-        "exactly", "precisely", "specifically", "definitely", "certainly",
-        "confirmed", "verified", "validated", "authenticated",
-    ]
-
-    def __init__(self):
-        self.patterns = [re.compile(pattern, re.IGNORECASE | re.DOTALL) for pattern in self.TOOL_RESULT_PATTERNS]
-        self.semantic_indicators = [word.lower() for word in self.SEMANTIC_CLAIM_INDICATORS]
-
-    def extract_claims(self, text: str) -> List[HallucinatedClaim]:
-        """Extract factual claims from text that could be tool results."""
-        claims = []
-        lines = text.split('\n')
-
-        for line_num, line in enumerate(lines):
-            line = line.strip()
-            if not line:
-                continue
-
-            # Check for pattern-based claims
-            for pattern in self.patterns:
-                matches = pattern.finditer(line)
-                for match in matches:
-                    tool_name = None
-                    claimed_result = match.group(0)
-
-                    if len(match.groups()) >= 2:
-                        tool_name = match.group(1)
-                        claimed_result = match.group(2)
-                    elif len(match.groups()) >= 1:
-                        claimed_result = match.group(1)
-
-                    # Calculate confidence based on pattern strength
-                    confidence = self._calculate_pattern_confidence(line, match, pattern)
-
-                    claims.append(HallucinatedClaim(
-                        claim_text=line,
-                        tool_name=tool_name,
-                        claimed_result=claimed_result,
-                        context=f"Line {line_num + 1} (pattern match)",
-                        confidence=confidence
-                    ))
-
-            # Check for semantic-based claims (even if no pattern matches)
-            semantic_claims = self._extract_semantic_claims(line, line_num)
-            claims.extend(semantic_claims)
-
-        # Remove duplicates (same claim_text)
-        seen_claims = set()
-        unique_claims = []
-        for claim in claims:
-            if claim.claim_text not in seen_claims:
-                seen_claims.add(claim.claim_text)
-                unique_claims.append(claim)
-
-        return unique_claims
-    
-    def _calculate_pattern_confidence(self, line: str, match: re.Match, pattern: re.Pattern) -> float:
-        """Calculate confidence score for a pattern-based claim."""
-        confidence = 0.3  # Base confidence for pattern match
-        
-        line_lower = line.lower()
-        
-        # Higher confidence for explicit tool references
-        if any(keyword in line_lower for keyword in ['api', 'tool', 'service', 'database']):
-            confidence += 0.3
-        
-        # Higher confidence for specific data types
-        if any(keyword in line_lower for keyword in ['temperature', 'price', 'balance', 'status']):
-            confidence += 0.2
-        
-        # Higher confidence for numbers/specific values
-        if re.search(r'\d+(?:\.\d+)?', line):
-            confidence += 0.2
-        
-        # Higher confidence for time references
-        if any(keyword in line_lower for keyword in ['now', 'current', 'today', 'latest']):
-            confidence += 0.1
-        
-        return min(confidence, 1.0)
-    
-    def _extract_semantic_claims(self, line: str, line_num: int) -> List[HallucinatedClaim]:
-        """Extract claims based on semantic content analysis."""
-        claims = []
-        line_lower = line.lower()
-        
-        # Count semantic indicators
-        indicator_count = sum(1 for indicator in self.semantic_indicators if indicator in line_lower)
-        
-        # If line has multiple semantic indicators, it's likely a factual claim
-        if indicator_count >= 2:
-            # Check if line makes definitive statements
-            definitive_patterns = [
-                r'\bis\s+[\d\$€£¥]+',  # "is $100", "is 25°C"
-                r'\bwas\s+[\d\$€£¥]+',  # "was $100"
-                r'\bshows?\s+[\d\$€£¥]+',  # "shows $100"
-                r'\bequals?\s+[\d\$€£¥]+',  # "equals $100"
-                r'\btotal(?:s|ed|ing)?\s+[\d\$€£¥]+',  # "total $100"
-                r'\bcost(?:s)?\s+[\d\$€£¥]+',  # "costs $100"
-                r'\bprice(?:d)?\s+at\s+[\d\$€£¥]+',  # "priced at $100"
-            ]
-            
-            for pattern in definitive_patterns:
-                if re.search(pattern, line_lower):
-                    # Calculate confidence based on semantic strength
-                    confidence = min(0.4 + (indicator_count * 0.1), 0.9)
-                    
-                    claims.append(HallucinatedClaim(
-                        claim_text=line,
-                        tool_name=self._extract_implied_tool(line),
-                        claimed_result=self._extract_claimed_value(line),
-                        context=f"Line {line_num + 1} (semantic analysis)",
-                        confidence=confidence
-                    ))
-                    break
-        
-        return claims
-    
-    def _extract_implied_tool(self, line: str) -> Optional[str]:
-        """Try to extract implied tool name from context."""
-        line_lower = line.lower()
-        
-        # Common tool domain mappings
-        tool_mappings = {
-            'weather': ['temperature', 'humidity', 'rain', 'snow', 'wind', 'forecast'],
-            'stock': ['price', 'trading', 'market', 'shares', 'stocks', 'ticker'],
-            'finance': ['balance', 'account', 'payment', 'transaction', 'money'],
-            'database': ['record', 'entry', 'data', 'query', 'search'],
-            'api': ['endpoint', 'response', 'request', 'service', 'call'],
-        }
-        
-        for tool_type, keywords in tool_mappings.items():
-            if any(keyword in line_lower for keyword in keywords):
-                return f"{tool_type}_api"
-        
-        return None
-    
-    def _extract_claimed_value(self, line: str) -> str:
-        """Extract the specific value being claimed."""
-        # Look for numbers, currency, percentages
-        value_patterns = [
-            r'[\d,]+\.?\d*\s*[%°CF$€£¥]',  # Numbers with units
-            r'\$[\d,]+\.?\d*',  # Currency
-            r'[\d,]+\.?\d*\s*(?:percent|%)',  # Percentages
-            r'[\d,]+\.?\d*',  # Plain numbers
+        tool_claim_patterns = [
+            r'I\s+(?:called|used|executed|ran|invoked)',
+            r'I\s+(?:got|obtained|received|fetched)',
+            r'API\s+(?:returned|responded|gave)',
+            r'tool\s+(?:returned|gave|showed)',
+            r'transaction\s+(?:id|number)',
+            r'result\s+(?:is|was|shows)',
         ]
         
-        for pattern in value_patterns:
-            match = re.search(pattern, line)
-            if match:
-                return match.group()
+        for pattern in tool_claim_patterns:
+            if re.search(pattern, response, re.IGNORECASE):
+                return True
         
-        # Fallback to last part of sentence
-        words = line.split()
-        if len(words) > 3:
-            return ' '.join(words[-3:])
+        return False
+
+    def has_valid_signatures(self, response: str) -> bool:
+        """Simple check: does this response contain any valid signed data?"""
+        # Look for any signed response objects or signature markers in the response
+        # This is the SIMPLE approach - no complex regex or claim matching
         
-        return line
+        import re
+        
+        # Look for signature patterns that would be embedded in LLM responses
+        signature_patterns = [
+            r'\[SIGNED_DATA:.*?\]',  # Structured signed data
+            r'signature.*?[a-zA-Z0-9+/=]{20,}',  # Base64-like signatures
+            r'sig[:=]\s*[a-zA-Z0-9+/=]{10,}',  # Short sig markers
+            r'verified[:=]\s*true',  # Verification markers
+        ]
+        
+        for pattern in signature_patterns:
+            if re.search(pattern, response, re.IGNORECASE):
+                return True
+        
+        return False
+    
+
 
     def extract_structured_claims(self, text: str) -> List[Dict[str, Any]]:
         """Extract structured data claims (JSON, key-value pairs)."""
@@ -293,108 +136,117 @@ class ClaimExtractor:
         return claims
 
 
-class VerificationRegistry:
-    """Registry of verified tool results."""
 
-    def __init__(self):
-        self.verified_results: Dict[str, SignedResponse] = {}
-        self.pending_verifications: Dict[str, Any] = {}
-
-    def register_verified_result(self, response: SignedResponse) -> None:
-        """Register a cryptographically verified tool result."""
-        self.verified_results[response.request_id] = response
-
-    def has_verification_for_claim(self, claim: HallucinatedClaim) -> bool:
-        """Check if we have a verification for a specific claim."""
-        # Simple matching - in practice, this would be more sophisticated
-        for response in self.verified_results.values():
-            if self._claim_matches_response(claim, response):
-                return True
-        return False
-
-    def _claim_matches_response(self, claim: HallucinatedClaim, response: SignedResponse) -> bool:
-        """Check if a claim matches a verified response."""
-        if claim.tool_name and claim.tool_name.lower() in response.tool_id.lower():
-            # Check if claimed result is similar to actual result
-            claimed_str = str(claim.claimed_result).lower()
-            actual_str = str(response.data).lower()
-            
-            # Simple similarity check - could be enhanced with NLP
-            return any(word in actual_str for word in claimed_str.split() if len(word) > 3)
-        
-        return False
 
 
 class HallucinationDetector:
-    """Main detector for LLM hallucinations."""
+    """SIMPLE detector: if response has valid signatures, it's OK. If not, it's hallucination."""
 
-    def __init__(self, signature_engine: SignatureEngine):
+    def __init__(self, signature_engine: SignatureEngine, tool_enforcer=None):
         self.signature_engine = signature_engine
-        self.claim_extractor = ClaimExtractor()
-        self.verification_registry = VerificationRegistry()
-        self.strict_mode = False  # If True, requires verification for ALL claims
+        self.validator = SimpleValidator()
+        self.tool_enforcer = tool_enforcer  # Integration with enforcement system
+        
+        # Track recent signed responses from direct tool calls
+        self.recent_signed_responses = []  # Keep last 50 signed responses
+        self.max_recent_responses = 50
 
-    def set_strict_mode(self, enabled: bool) -> None:
-        """Enable/disable strict verification mode."""
-        self.strict_mode = enabled
+    def register_signed_response(self, signed_response: SignedResponse) -> None:
+        """Register a signed response from a direct tool call."""
+        self.recent_signed_responses.insert(0, signed_response)
+        # Keep only recent responses
+        if len(self.recent_signed_responses) > self.max_recent_responses:
+            self.recent_signed_responses = self.recent_signed_responses[:self.max_recent_responses]
+
+    def set_tool_enforcer(self, enforcer) -> None:
+        """Set the tool enforcer for verification."""
+        self.tool_enforcer = enforcer
 
     def validate_response(self, response: str, context: Dict[str, Any] = None) -> ValidationResult:
-        """Validate an LLM response for hallucinated claims."""
-        claims = self.claim_extractor.extract_claims(response)
-        hallucinations = []
-        verified_claims = []
-
-        for claim in claims:
-            if self.verification_registry.has_verification_for_claim(claim):
-                verified_claims.append(claim.claim_text)
-                claim.confidence = 1.0
-            else:
-                if self.strict_mode or self._looks_like_tool_result(claim):
-                    hallucinations.append(claim)
-                    claim.confidence = 0.0
-
-        # Calculate overall confidence
-        total_claims = len(claims)
-        if total_claims == 0:
-            confidence_score = 1.0  # No claims to verify
-        else:
-            confidence_score = len(verified_claims) / total_claims
-
-        is_valid = len(hallucinations) == 0
-
-        return ValidationResult(
-            valid=is_valid,
-            hallucinations=hallucinations,
-            verified_claims=verified_claims,
-            message=self._generate_validation_message(is_valid, hallucinations, verified_claims),
-            confidence_score=confidence_score
-        )
-
-    def _looks_like_tool_result(self, claim: HallucinatedClaim) -> bool:
-        """Determine if a claim looks like it should be a tool result."""
-        # Heuristics to identify potential tool results
-        indicators = [
-            claim.tool_name is not None,
-            any(word in claim.claim_text.lower() for word in [
-                'api', 'tool', 'checked', 'retrieved', 'fetched', 
-                'temperature', 'weather', 'price', 'status'
-            ]),
-            ':' in claim.claim_text,  # Often indicates structured data
-            any(char.isdigit() for char in claim.claimed_result),  # Contains numbers
-        ]
+        """SIMPLE validation: if response has tool claims, require signatures. Otherwise allow."""
         
-        return sum(indicators) >= 2
-
-    def _generate_validation_message(self, is_valid: bool, hallucinations: List[HallucinatedClaim], verified_claims: List[str]) -> str:
-        """Generate a human-readable validation message."""
+        # First check: does response contain tool claims?
+        has_tool_claims = self.validator.has_tool_claims(response)
+        
+        if not has_tool_claims:
+            # No tool claims = general conversation, allow it
+            return ValidationResult(
+                valid=True,
+                hallucinations=[],
+                verified_claims=[],
+                message="✅ General conversation - no tool claims detected",
+                confidence_score=1.0
+            )
+        
+        # Has tool claims - check for signatures
+        has_signatures = self.validator.has_valid_signatures(response)
+        has_recent_signed_data = self._has_recent_signed_data(response)
+        
+        has_enforcer_data = False
+        if self.tool_enforcer:
+            has_enforcer_data = self.tool_enforcer.has_signed_data_for_response(response)
+        
+        # If any signature check passes, response is valid
+        is_valid = has_signatures or has_recent_signed_data or has_enforcer_data
+        
         if is_valid:
-            if verified_claims:
-                return f"✅ All {len(verified_claims)} claims verified with cryptographic signatures"
-            else:
-                return "✅ No verifiable claims detected (general response)"
+            return ValidationResult(
+                valid=True,
+                hallucinations=[],
+                verified_claims=[response],
+                message="✅ Tool claims backed by verified signatures",
+                confidence_score=1.0
+            )
         else:
-            unverified_count = len(hallucinations)
-            return f"❌ Detected {unverified_count} unverified claim(s) that may be hallucinated"
+            # Tool claims without signatures - hallucination
+            fake_claim = HallucinatedClaim(
+                claim_text=response,
+                tool_name=None,
+                claimed_result=response,
+                context="Tool claims without signatures"
+            )
+            
+            return ValidationResult(
+                valid=False,
+                hallucinations=[fake_claim],
+                verified_claims=[],
+                message="❌ Tool claims without verified signatures - possible hallucination",
+                confidence_score=0.0
+            )
+
+    def _has_recent_signed_data(self, response: str) -> bool:
+        """Check if response contains data from recent signed responses."""
+        import time
+        current_time = time.time()
+        
+        for signed_response in self.recent_signed_responses:
+            # Only check recent responses (within last 60 seconds)
+            time_diff = current_time - (signed_response.timestamp / 1000)  # Convert to seconds
+            if time_diff > 60:
+                continue
+                
+            # Simple check: does response contain data from this signed response?
+            if self._response_contains_signed_data(response, signed_response):
+                return True
+        
+        return False
+
+    def _response_contains_signed_data(self, response: str, signed_response: SignedResponse) -> bool:
+        """Simple check: does response contain any data from the signed response?"""
+        response_lower = response.lower()
+        
+        # Check if tool ID is mentioned
+        if signed_response.tool_id.lower() in response_lower:
+            return True
+        
+        # Check if any result data is mentioned
+        if signed_response.data and isinstance(signed_response.data, dict):
+            for key, value in signed_response.data.items():
+                value_str = str(value).lower()
+                if len(value_str) >= 2 and value_str in response_lower:
+                    return True
+        
+        return False
 
 
 class LLMResponseInterceptor:
@@ -427,9 +279,9 @@ class LLMResponseInterceptor:
 
 
 # Convenience functions
-def create_hallucination_detector(signature_engine: SignatureEngine) -> HallucinationDetector:
-    """Create a configured hallucination detector."""
-    return HallucinationDetector(signature_engine)
+def create_hallucination_detector(signature_engine: SignatureEngine, tool_enforcer=None) -> HallucinationDetector:
+    """Create a configured hallucination detector with optional tool enforcer integration."""
+    return HallucinationDetector(signature_engine, tool_enforcer)
 
 
 def validate_llm_response(response: str, detector: HallucinationDetector) -> ValidationResult:

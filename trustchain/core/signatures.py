@@ -155,13 +155,34 @@ class InMemoryVerifier(Verifier):
                         is_valid = signer.key_pair.verify(hash_bytes, signature_bytes)
 
                         if is_valid:
+                            # Try to get trust level from tool metadata or default to MEDIUM
+                            tool_trust_level = TrustLevel.MEDIUM
+                            tool_id = data.get("tool_id", "unknown")
+                            
+                            # Look for the tool in the signature engine's registry to get its trust level
+                            if hasattr(self._signature_engine, 'trust_registry') and self._signature_engine.trust_registry:
+                                try:
+                                    # Try to get tool metadata from registry
+                                    tool_metadata = getattr(self._signature_engine.trust_registry, 'get_tool', lambda x: None)(tool_id)
+                                    if tool_metadata and hasattr(tool_metadata, 'trust_level'):
+                                        tool_trust_level = tool_metadata.trust_level
+                                except:
+                                    pass
+                            
+                            # Fallback: check if tool trust level is in the data itself
+                            if 'trust_level' in data:
+                                try:
+                                    tool_trust_level = TrustLevel(data['trust_level'])
+                                except:
+                                    pass
+                            
                             return VerificationResult.success(
                                 request_id=data.get("request_id", "unknown"),
                                 tool_id=data.get("tool_id", "unknown"),
                                 signature_id=signature.public_key_id,
                                 verifier_id=self.verifier_id,
                                 algorithm=signature.algorithm,
-                                trust_level=TrustLevel.MEDIUM,
+                                trust_level=tool_trust_level,
                                 verification_time_ms=(time.time() - start_time) * 1000,
                             )
                         else:
@@ -432,18 +453,13 @@ class SignatureEngine:
         self._verifiers: Dict[str, Verifier] = {}
         self._default_verifier: Optional[Verifier] = None
 
-        # Set up default verifier if trust registry is provided
-        if trust_registry:
-            self._default_verifier = TrustRegistryVerifier(trust_registry, "default")
-            self._verifiers["default"] = self._default_verifier
-        else:
-            # Create a simple in-memory verifier for standalone operation
-            self._default_verifier = InMemoryVerifier("default")
-            self._default_verifier.set_signature_engine(self)
-            self._verifiers["default"] = self._default_verifier
-            # Ensure the reference is set
-            if not self._default_verifier._signature_engine:
-                raise ValueError("InMemoryVerifier engine reference not set")
+        # Always use InMemoryVerifier for now (TrustRegistryVerifier has async issues)
+        self._default_verifier = InMemoryVerifier("default")
+        self._default_verifier.set_signature_engine(self)
+        self._verifiers["default"] = self._default_verifier
+        # Ensure the reference is set
+        if not self._default_verifier._signature_engine:
+            raise ValueError("InMemoryVerifier engine reference not set")
 
     def register_signer(self, signer_id: str, signer: Signer) -> None:
         """Register a signer."""
@@ -487,6 +503,7 @@ class SignatureEngine:
         tool_id: str,
         data: Any,
         execution_time_ms: Optional[float] = None,
+        trust_level: Optional[TrustLevel] = None,
     ) -> SignedResponse:
         """Sign a tool response."""
         if signer_id not in self._signers:
@@ -519,6 +536,10 @@ class SignatureEngine:
             signature=signature,
             execution_time_ms=execution_time_ms,
         )
+        
+        # Set trust level in metadata if provided
+        if trust_level is not None:
+            signed_response.trust_metadata.trust_level = trust_level
 
         return signed_response
 
@@ -561,7 +582,7 @@ class SignatureEngine:
             signed_response.trust_metadata.verified = True
             signed_response.trust_metadata.verification_timestamp = result.verified_at
             signed_response.trust_metadata.verifier_id = result.verifier_id
-            signed_response.trust_metadata.trust_level = result.trust_level
+            # Keep the original trust level from tool, don't override with verifier's default
 
         return result
 

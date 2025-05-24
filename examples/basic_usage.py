@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Basic usage example for TrustChain library."""
+"""Basic usage example for TrustChain library v2."""
 
 import asyncio
 import sys
 import time
 from typing import Any, Dict
 
-from trustchain import SignatureAlgorithm, TrustedTool, TrustLevel
+from trustchain.v2 import TrustChain, TrustChainConfig
+
+# Create TrustChain instance with configuration
+tc = TrustChain(TrustChainConfig(
+    enable_nonce=False,  # Disable nonce for simpler examples
+    cache_ttl=3600,
+    max_cached_responses=100,
+))
 
 
 # Example 1: Simple trusted tool
-@TrustedTool(
-    "weather_api_v1", require_nonce=False
-)  # Disable nonce for CI compatibility
-async def get_weather(location: str) -> Dict[str, Any]:
+@tc.tool("weather_api_v1")
+def get_weather(location: str) -> Dict[str, Any]:
     """Get weather information for a location."""
     # Simulate API call
-    await asyncio.sleep(0.1)
+    time.sleep(0.1)
 
     return {
         "location": location,
@@ -28,14 +33,8 @@ async def get_weather(location: str) -> Dict[str, Any]:
 
 
 # Example 2: High-security financial tool
-@TrustedTool(
-    "payment_processor_v1",
-    trust_level=TrustLevel.HIGH,
-    algorithm=SignatureAlgorithm.ED25519,
-    description="Secure payment processing tool",
-    require_nonce=False,  # Disable nonce for CI compatibility
-)
-async def process_payment(
+@tc.tool("payment_processor_v1")
+def process_payment(
     amount: float, recipient: str, currency: str = "USD"
 ) -> Dict[str, Any]:
     """Process a financial payment."""
@@ -60,12 +59,7 @@ async def process_payment(
 
 
 # Example 3: Simple calculator (no nonce required for speed)
-@TrustedTool(
-    "calculator_v1",
-    require_nonce=False,
-    trust_level=TrustLevel.LOW,
-    description="Basic mathematical operations",
-)
+@tc.tool("calculator_v1")
 def calculate(operation: str, a: float, b: float) -> Dict[str, Any]:
     """Perform basic mathematical operations."""
     operations = {
@@ -88,17 +82,15 @@ def calculate(operation: str, a: float, b: float) -> Dict[str, Any]:
     }
 
 
-# Example 4: Data analysis tool
-@TrustedTool(
-    "data_analyzer_v1",
-    trust_level=TrustLevel.MEDIUM,
-    description="Analyze data and provide insights",
-    require_nonce=False,  # Disable nonce for CI compatibility
-)
+# Example 4: Data analysis tool - now async
+@tc.tool("data_analyzer_v1")
 async def analyze_data(data: list, analysis_type: str = "basic") -> Dict[str, Any]:
     """Analyze numerical data."""
     if not data:
         return {"error": "No data provided"}
+
+    # Simulate async processing
+    await asyncio.sleep(0.01)
 
     # Basic statistics
     total = sum(data)
@@ -135,26 +127,26 @@ async def analyze_data(data: list, analysis_type: str = "basic") -> Dict[str, An
 
 async def main():
     """Main example function."""
-    print("🔗 TrustChain Basic Usage Example")
+    print("🔗 TrustChain Basic Usage Example (v2)")
     print("=" * 50)
 
-    # TrustChain should work out of the box - no setup needed!
-    print("\n🔧 TrustChain auto-initialization...")
-    print("   ✅ Library ready - signatures will be created and verified automatically")
+    # TrustChain v2 works out of the box - no setup needed!
+    print("\n🔧 TrustChain v2 initialized...")
+    print("   ✅ Simple API - just use @tc.tool() decorator")
 
     # Example 1: Weather API
     print("\n1. Weather API Example:")
-    weather_response = await get_weather("New York")
+    weather_response = get_weather("New York")
     print(f"   Tool ID: {weather_response.tool_id}")
-    print(f"   Request ID: {weather_response.request_id}")
+    print(f"   Signature ID: {weather_response.signature_id}")
     print(f"   Data: {weather_response.data}")
     print(f"   Verified: {weather_response.is_verified}")
-    print(f"   Execution time: {weather_response.execution_time_ms:.2f}ms")
+    print(f"   Signature: {weather_response.signature[:32]}...")
 
     # Example 2: Payment processing
     print("\n2. Payment Processing Example:")
     try:
-        payment_response = await process_payment(
+        payment_response = process_payment(
             amount=1500.00, recipient="merchant@example.com", currency="USD"
         )
         print(f"   Tool ID: {payment_response.tool_id}")
@@ -167,13 +159,13 @@ async def main():
 
     # Example 3: Calculator (synchronous function)
     print("\n3. Calculator Example:")
-    calc_response = await calculate("multiply", 15, 4)
+    calc_response = calculate("multiply", 15, 4)
     print(f"   Tool ID: {calc_response.tool_id}")
     print(f"   Operation: {calc_response.data['operation']}")
     print(f"   Result: {calc_response.data['result']}")
     print(f"   Verified: {calc_response.is_verified}")
 
-    # Example 4: Data analysis
+    # Example 4: Data analysis (async)
     print("\n4. Data Analysis Example:")
     sample_data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     analysis_response = await analyze_data(sample_data, "advanced")
@@ -184,47 +176,38 @@ async def main():
 
     # Example 5: Show tool statistics
     print("\n5. Tool Statistics:")
-    weather_stats = await get_weather.get_statistics()
-    print(f"   Weather API calls: {weather_stats['stats']['total_calls']}")
-    print(f"   Success rate: {weather_stats['success_rate']:.2%}")
-    print(f"   Avg execution time: {weather_stats['avg_execution_time_ms']:.2f}ms")
+    weather_stats = tc.get_tool_stats("weather_api_v1")
+    print(f"   Weather API calls: {weather_stats['call_count']}")
+    print(f"   Last execution time: {weather_stats.get('last_execution_time', 0) * 1000:.2f}ms")
+    
+    # Overall stats
+    overall_stats = tc.get_stats()
+    print(f"\n   Overall statistics:")
+    print(f"   Total tools: {overall_stats['total_tools']}")
+    print(f"   Total calls: {overall_stats['total_calls']}")
+    print(f"   Cache size: {overall_stats['cache_size']}")
 
     # Example 6: Verify signatures manually
     print("\n6. Manual Signature Verification:")
-    try:
-        from trustchain.core.signatures import get_signature_engine
-
-        signature_engine = get_signature_engine()
-        if signature_engine:
-            verification_result = signature_engine.verify_response(weather_response)
-            print(f"   Verification valid: {verification_result.valid}")
-            print(f"   Algorithm used: {verification_result.algorithm_used.value}")
-            print(f"   Trust level: {verification_result.trust_level.value}")
-            print(
-                f"   Verification time: {verification_result.verification_time_ms:.2f}ms"
-            )
-        else:
-            print("   Signature engine not available - using built-in verification")
-            print(f"   Response verified: {weather_response.is_verified}")
-    except Exception as e:
-        print(f"   Manual verification skipped: {e}")
-        print(f"   Response verified: {weather_response.is_verified}")
+    is_valid = tc.verify(weather_response)
+    print(f"   Weather response valid: {is_valid}")
+    print(f"   Algorithm used: {tc._signer.algorithm}")
 
     # Example 7: Error handling
     print("\n7. Error Handling Example:")
     try:
         # This should fail due to invalid amount
-        await process_payment(-100, "test@example.com")
+        process_payment(-100, "test@example.com")
     except Exception as e:
         print(f"   Expected error caught: {type(e).__name__}: {e}")
 
     print("\n✅ All examples completed successfully!")
-    print("\nKey Benefits Demonstrated:")
-    print("  • Automatic signature generation and verification")
-    print("  • Replay protection with nonces")
-    print("  • Performance tracking and statistics")
-    print("  • Different trust levels for different use cases")
-    print("  • Seamless integration with async and sync functions")
+    print("\nKey Benefits of v2:")
+    print("  • Simpler API - just @tc.tool() decorator")
+    print("  • No global state - explicit TrustChain instances")
+    print("  • Automatic sync/async detection")
+    print("  • Built-in statistics and caching")
+    print("  • Configuration-based - no hardcoded values")
 
 
 if __name__ == "__main__":

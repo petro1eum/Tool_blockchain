@@ -19,7 +19,6 @@ import os
 import sys
 import time
 from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -43,7 +42,7 @@ class AIAgent:
         # Simulate AI processing
         await asyncio.sleep(0.1)
 
-        # Mock AI decision making
+        # AI decision making logic
         if "weather" in message.lower():
             response = "I'll check the weather for you. Let me use my weather tool."
             # AI decides to call weather tool

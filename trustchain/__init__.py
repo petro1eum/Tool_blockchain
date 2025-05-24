@@ -87,6 +87,7 @@ try:
         ResponseVerifier,
         EnforcedAgent,
         create_tool_enforcer,
+        create_integrated_security_system,
         wrap_agent_with_enforcement,
         UnauthorizedToolExecution,
     )
@@ -188,6 +189,7 @@ __all__ = [
     "ResponseVerifier",
     "EnforcedAgent",
     "create_tool_enforcer",
+    "create_integrated_security_system",
     "wrap_agent_with_enforcement",
     "UnauthorizedToolExecution",
     # Automatic Tool Call Interception

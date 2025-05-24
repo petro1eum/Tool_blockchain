@@ -7,6 +7,7 @@ Telegram: @EdCher
 
 import asyncio
 import time
+import json
 from typing import Any, Dict
 
 import pytest
@@ -23,6 +24,7 @@ from trustchain.core.crypto import Ed25519KeyPair
 from trustchain.core.models import KeyMetadata, SignedResponse
 from trustchain.tools.base import FunctionTrustedTool
 from trustchain.utils.exceptions import NonceReplayError, ToolExecutionError
+from trustchain.v2 import TrustChain, TrustChainConfig
 
 
 @pytest.fixture
@@ -38,6 +40,15 @@ async def registry():
 def crypto_engine():
     """Create a test crypto engine."""
     return get_crypto_engine()
+
+
+@pytest.fixture
+def tc():
+    """Create a TrustChain instance for testing."""
+    return TrustChain(TrustChainConfig(
+        enable_nonce=False,  # Disable for simpler tests
+        cache_ttl=3600,
+    ))
 
 
 class TestCryptoEngine:
@@ -366,6 +377,304 @@ async def test_full_integration():
 
     finally:
         await registry.stop()
+
+
+def test_basic_tool_creation(tc):
+    """Test creating a basic tool."""
+    from trustchain.v2.signer import SignedResponse as SignedResponseV2
+    
+    @tc.tool("test_tool")
+    def my_tool(x: int) -> int:
+        return x * 2
+    
+    result = my_tool(5)
+    
+    assert isinstance(result, SignedResponseV2)
+    assert result.tool_id == "test_tool"
+    assert result.data == 10
+    assert result.is_verified
+
+
+def test_async_tool(tc):
+    """Test async tool support."""
+    @tc.tool("async_tool")
+    async def my_async_tool(x: int) -> int:
+        await asyncio.sleep(0.01)
+        return x + 1
+    
+    # Run in event loop
+    result = asyncio.run(my_async_tool(5))
+    
+    assert result.data == 6
+    assert result.is_verified
+
+
+def test_tool_with_complex_data(tc):
+    """Test tool returning complex data structures."""
+    @tc.tool("complex_tool")
+    def complex_data() -> Dict[str, Any]:
+        return {
+            "numbers": [1, 2, 3],
+            "nested": {"key": "value"},
+            "boolean": True,
+            "none": None,
+        }
+    
+    result = complex_data()
+    
+    assert isinstance(result.data, dict)
+    assert result.data["numbers"] == [1, 2, 3]
+    assert result.data["nested"]["key"] == "value"
+    assert result.is_verified
+
+
+def test_signature_verification(tc):
+    """Test signature verification."""
+    @tc.tool("secure_tool")
+    def secure_op(value: str) -> str:
+        return f"processed_{value}"
+    
+    # Get signed response
+    response = secure_op("test")
+    
+    # Verify it
+    assert tc.verify(response)
+    
+    # Tamper with data and verify should fail
+    import copy
+    tampered = copy.deepcopy(response)
+    tampered.data = "tampered_data"
+    
+    assert not tc.verify(tampered)
+
+
+def test_tool_statistics(tc):
+    """Test tool execution statistics."""
+    @tc.tool("stats_tool")
+    def process(x: int) -> int:
+        return x * x
+    
+    # Multiple calls
+    process(2)
+    process(3)
+    process(4)
+    
+    # Check stats
+    stats = tc.get_tool_stats("stats_tool")
+    assert stats['call_count'] == 3
+    assert stats['last_execution_time'] is not None
+    
+    # Overall stats
+    overall = tc.get_stats()
+    assert overall['total_calls'] == 3
+    assert overall['total_tools'] == 1
+
+
+def test_error_handling(tc):
+    """Test error handling in tools."""
+    @tc.tool("error_tool")
+    def might_fail(x: int) -> int:
+        if x < 0:
+            raise ValueError("Negative input not allowed")
+        return x
+    
+    # Success case
+    result = might_fail(5)
+    assert result.data == 5
+    
+    # Error case
+    with pytest.raises(ValueError):
+        might_fail(-1)
+    
+    # Stats should show the error
+    stats = tc.get_tool_stats("error_tool")
+    assert stats['call_count'] == 2  # Both calls counted
+    assert "Negative input" in stats.get('last_error', '')
+
+
+def test_serialization(tc):
+    """Test SignedResponse serialization."""
+    from trustchain.v2.signer import SignedResponse as SignedResponseV2
+    
+    @tc.tool("serializable")
+    def get_data() -> dict:
+        return {"key": "value", "number": 42}
+    
+    response = get_data()
+    
+    # Serialize to dict
+    data_dict = response.to_dict()
+    
+    # Check all fields
+    assert data_dict['tool_id'] == "serializable"
+    assert data_dict['data'] == {"key": "value", "number": 42}
+    assert 'signature' in data_dict
+    assert 'timestamp' in data_dict
+    
+    # Recreate from dict
+    new_response = SignedResponseV2(**data_dict)
+    assert new_response.tool_id == response.tool_id
+    assert new_response.data == response.data
+    assert new_response.signature == response.signature
+
+
+def test_cache_functionality(tc):
+    """Test response caching."""
+    tc.config.enable_cache = True
+    tc.config.max_cached_responses = 2
+    
+    @tc.tool("cached_tool")
+    def get_value(x: int) -> int:
+        return x
+    
+    # Create multiple responses
+    r1 = get_value(1)
+    r2 = get_value(2)
+    r3 = get_value(3)
+    
+    # Check cache size (should be limited)
+    stats = tc.get_stats()
+    assert stats['cache_size'] <= 2
+
+
+def test_nonce_functionality():
+    """Test nonce-based replay protection."""
+    tc_with_nonce = TrustChain(TrustChainConfig(enable_nonce=True))
+    
+    @tc_with_nonce.tool("nonce_tool")
+    def protected(x: int) -> int:
+        return x
+    
+    # Each call should have unique nonce
+    r1 = protected(1)
+    r2 = protected(2)
+    
+    assert r1.nonce is not None
+    assert r2.nonce is not None
+    assert r1.nonce != r2.nonce
+
+
+def test_multiple_tools(tc):
+    """Test multiple tools on same TrustChain."""
+    @tc.tool("add")
+    def add(a: int, b: int) -> int:
+        return a + b
+    
+    @tc.tool("multiply")
+    def multiply(a: int, b: int) -> int:
+        return a * b
+    
+    @tc.tool("divide")
+    def divide(a: int, b: int) -> float:
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return a / b
+    
+    # Use all tools
+    r1 = add(5, 3)
+    r2 = multiply(4, 7)
+    r3 = divide(10, 2)
+    
+    assert r1.data == 8
+    assert r2.data == 28
+    assert r3.data == 5.0
+    
+    # Check stats
+    stats = tc.get_stats()
+    assert stats['total_tools'] == 3
+    assert stats['total_calls'] == 3
+
+
+def test_tool_metadata(tc):
+    """Test tool metadata and options."""
+    @tc.tool("metadata_tool", description="A test tool", version="1.0")
+    def my_tool() -> str:
+        return "result"
+    
+    # Tool should be registered
+    assert "metadata_tool" in tc._tools
+    
+    # Check metadata
+    tool_info = tc._tools["metadata_tool"]
+    assert tool_info['options']['description'] == "A test tool"
+    assert tool_info['options']['version'] == "1.0"
+
+
+def test_concurrent_tool_calls(tc):
+    """Test concurrent tool execution."""
+    @tc.tool("concurrent_tool")
+    async def slow_tool(x: int) -> int:
+        await asyncio.sleep(0.05)
+        return x * 2
+    
+    async def run_concurrent():
+        # Run multiple calls concurrently
+        tasks = [slow_tool(i) for i in range(5)]
+        results = await asyncio.gather(*tasks)
+        
+        # Check all results
+        for i, result in enumerate(results):
+            assert result.data == i * 2
+            assert result.is_verified
+        
+        return len(results)
+    
+    count = asyncio.run(run_concurrent())
+    assert count == 5
+    
+    # Check stats
+    stats = tc.get_tool_stats("concurrent_tool")
+    assert stats['call_count'] == 5
+
+
+def test_clear_cache(tc):
+    """Test cache clearing functionality."""
+    tc.config.enable_cache = True
+    
+    @tc.tool("cache_test")
+    def get_data(x: int) -> int:
+        return x
+    
+    # Create some cached responses
+    get_data(1)
+    get_data(2)
+    
+    # Check cache has items
+    stats = tc.get_stats()
+    assert stats['cache_size'] > 0
+    
+    # Clear cache
+    tc.clear_cache()
+    
+    # Check cache is empty
+    stats = tc.get_stats()
+    assert stats['cache_size'] == 0
+
+
+def test_json_serializable_data(tc):
+    """Test that tool responses are JSON serializable."""
+    @tc.tool("json_tool")
+    def get_json_data() -> dict:
+        return {
+            "string": "value",
+            "number": 123,
+            "float": 45.67,
+            "boolean": True,
+            "null": None,
+            "list": [1, 2, 3],
+            "nested": {"a": 1, "b": 2}
+        }
+    
+    response = get_json_data()
+    
+    # Should be JSON serializable
+    json_str = json.dumps(response.to_dict(), default=str)
+    assert json_str is not None
+    
+    # Parse back
+    parsed = json.loads(json_str)
+    assert parsed['data']['string'] == "value"
+    assert parsed['data']['number'] == 123
 
 
 if __name__ == "__main__":

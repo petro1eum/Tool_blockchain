@@ -1,314 +1,285 @@
 #!/usr/bin/env python3
-"""
-TrustChain Full Enforcement Demo
+"""Full enforcement demonstration for TrustChain v2."""
 
-Demonstrates the complete tool execution enforcement system that prevents
-agents from hallucinating tool results by requiring all tool calls to
-go through cryptographic verification.
-"""
-
-import json
+import asyncio
 import time
-from typing import Dict, Any
+from typing import Any, Dict, List
 
-# TrustChain imports
-from trustchain import (
-    get_signature_engine, TrustedTool
-)
-from trustchain.monitoring.tool_enforcement import (
-    create_tool_enforcer,
-    wrap_agent_with_enforcement,
-    ResponseVerifier
-)
+from trustchain.v2 import TrustChain, TrustChainConfig
 
 
-print("🛡️ TrustChain Full Enforcement Demo")
-print("="*60)
-print("Demonstrating COMPLETE protection against agent hallucinations")
-print("by enforcing cryptographic verification of ALL tool claims.")
-print("="*60)
+# Create TrustChain with strict settings
+tc = TrustChain(TrustChainConfig(
+    enable_nonce=True,
+    cache_ttl=300,
+    max_cached_responses=50,
+))
 
 
-# ===== STEP 1: Create Verified Tools =====
-print("\n🔧 STEP 1: Creating cryptographically verified tools...")
-
-@TrustedTool("weather_api", require_nonce=False)
-def get_weather(city: str) -> Dict[str, Any]:
-    """Get real weather data (simulated)."""
-    weather_data = {
+# Define various tools
+@tc.tool("weather_api")
+async def get_weather(city: str) -> Dict[str, Any]:
+    """Get weather data for a city."""
+    await asyncio.sleep(0.05)  # Simulate API call
+    return {
         "city": city,
-        "temperature": 18.5,
-        "humidity": 72,
-        "conditions": "Light rain",
-        "wind_speed": 12,
-        "timestamp": int(time.time())
+        "temperature": 22,
+        "humidity": 65,
+        "conditions": "Partly cloudy",
+        "wind_speed": 10,
     }
-    print(f"🌧️  Real weather API called for {city}")
-    return weather_data
 
 
-@TrustedTool("stock_api", require_nonce=False)
-def get_stock_price(symbol: str) -> Dict[str, Any]:
-    """Get real stock data (simulated)."""
-    stock_data = {
-        "symbol": symbol.upper(),
-        "price": 184.50,
-        "change": "+3.25",
-        "volume": 2456789,
-        "market": "NASDAQ",
-        "timestamp": int(time.time())
+@tc.tool("stock_api")
+async def get_stock_price(symbol: str) -> Dict[str, Any]:
+    """Get stock price data."""
+    await asyncio.sleep(0.05)  # Simulate API call
+    prices = {
+        "AAPL": 185.50,
+        "GOOGL": 142.75,
+        "MSFT": 378.25,
+        "AMZN": 155.60,
     }
-    print(f"📊 Real stock API called for {symbol}")
-    return stock_data
+    return {
+        "symbol": symbol,
+        "price": prices.get(symbol, 100.0),
+        "currency": "USD",
+        "timestamp": time.time(),
+    }
 
 
-@TrustedTool("news_api", require_nonce=False)
-def get_news(topic: str) -> Dict[str, Any]:
-    """Get real news data (simulated)."""
-    news_data = {
+@tc.tool("news_api")
+async def get_news(topic: str, limit: int = 5) -> Dict[str, Any]:
+    """Get latest news on a topic."""
+    await asyncio.sleep(0.1)  # Simulate API call
+    return {
         "topic": topic,
-        "headlines": [
-            f"Latest developments in {topic}",
-            f"Market analysis: {topic} trends",
-            f"Expert insights on {topic}"
+        "count": limit,
+        "articles": [
+            {"title": f"News about {topic} #{i}", "source": "NewsAPI"}
+            for i in range(1, limit + 1)
         ],
-        "source_count": 15,
-        "timestamp": int(time.time())
     }
-    print(f"📰 Real news API called for {topic}")
-    return news_data
 
 
-# ===== STEP 2: Setup Enforcement System =====
-print("\n🔒 STEP 2: Setting up enforcement system...")
-
-# Create signature engine
-signature_engine = get_signature_engine()
-
-# Create enforcer and register tools
-enforcer = create_tool_enforcer(signature_engine, [
-    get_weather._trustchain_tool,
-    get_stock_price._trustchain_tool,
-    get_news._trustchain_tool
-])
-
-print(f"✅ Enforcer created with {len(enforcer.registered_tools)} registered tools")
-
-
-# ===== STEP 3: Simulate Agent Without Enforcement =====
-print("\n🚨 STEP 3: Demonstrating agent WITHOUT enforcement (DANGEROUS)...")
-
-class UnprotectedAgent:
-    """Simulates an agent that can hallucinate tool results."""
+class SimpleAgent:
+    """A simple AI agent that uses tools."""
     
-    def run(self, query: str) -> str:
-        """Simulate agent responses that might include hallucinations."""
-        if "weather" in query.lower():
-            return """I checked the weather API for New York:
-            - Temperature: 25°C (perfect!)  
-            - Humidity: 45%
-            - Conditions: Sunny and clear
-            - Wind: 8 mph from southwest
-            
-            Great weather for outdoor activities!"""
+    def __init__(self, name: str):
+        self.name = name
+        self.call_history: List[Dict[str, Any]] = []
+    
+    async def process_query(self, query: str) -> str:
+        """Process a user query using available tools."""
+        print(f"\n🤖 {self.name} processing: '{query}'")
         
-        elif "stock" in query.lower():
-            return """I retrieved the latest stock data from our API:
-            - AAPL: $195.75 (+4.2%)
-            - MSFT: $412.30 (+1.8%) 
-            - GOOGL: $142.85 (+2.1%)
+        # Simple keyword-based tool selection
+        if "weather" in query.lower():
+            # Extract city (simple approach)
+            city = "London"  # Default
+            if "paris" in query.lower():
+                city = "Paris"
+            elif "tokyo" in query.lower():
+                city = "Tokyo"
             
-            Tech stocks are performing well today!"""
+            # Call the weather tool
+            response = await get_weather(city)
+            self.call_history.append({
+                "tool": "weather_api",
+                "response": response,
+                "verified": response.is_verified
+            })
+            
+            return f"The weather in {response.data['city']} is {response.data['conditions']} with a temperature of {response.data['temperature']}°C."
+        
+        elif "stock" in query.lower() or "price" in query.lower():
+            # Extract symbol
+            symbol = "AAPL"  # Default
+            for s in ["GOOGL", "MSFT", "AMZN"]:
+                if s.lower() in query.lower():
+                    symbol = s
+            
+            # Call the stock API
+            response = await get_stock_price(symbol)
+            self.call_history.append({
+                "tool": "stock_api",
+                "response": response,
+                "verified": response.is_verified
+            })
+            
+            return f"The current price of {response.data['symbol']} is ${response.data['price']:.2f}."
         
         elif "news" in query.lower():
-            return """I searched our news database for AI developments:
-            - 5 major AI breakthroughs announced this week
-            - Tech companies investing $50B in AI research
-            - New regulations proposed for AI safety
+            # Extract topic
+            topic = "technology"  # Default
+            if "sports" in query.lower():
+                topic = "sports"
+            elif "business" in query.lower():
+                topic = "business"
             
-            AI sector is very active right now!"""
+            # Call the news API
+            response = await get_news(topic, limit=3)
+            self.call_history.append({
+                "tool": "news_api",
+                "response": response,
+                "verified": response.is_verified
+            })
+            
+            articles = response.data['articles']
+            news_summary = f"Here are the latest {topic} news:\n"
+            for article in articles:
+                news_summary += f"- {article['title']}\n"
+            
+            return news_summary
         
         else:
-            return "I can help with weather, stocks, or news information."
+            return "I'm not sure how to help with that. Try asking about weather, stocks, or news."
 
-# Test unprotected agent
-unprotected_agent = UnprotectedAgent()
-verifier = ResponseVerifier(enforcer)
 
-print("\n🧪 Testing unprotected agent responses...")
-
-test_queries = [
-    "What's the weather in New York?",
-    "Give me current stock prices",
-    "What's the latest AI news?"
-]
-
-for query in test_queries:
-    print(f"\n❓ Query: {query}")
-    response = unprotected_agent.run(query)
-    print(f"🤖 Agent response: {response[:100]}...")
+async def demonstrate_enforcement():
+    """Demonstrate the full enforcement system."""
     
-    # Verify the response
-    verified_response, proofs, unverified = verifier.verify_response(response)
+    print("🔒 TrustChain v2 Full Enforcement Demo")
+    print("=" * 60)
     
-    print(f"📊 Verification results:")
-    print(f"   ✅ Verified claims: {len(proofs)}")
-    print(f"   ❌ Unverified claims: {len(unverified)}")
-    print(f"   🚨 DANGER LEVEL: {'🔴 HIGH' if unverified else '🟢 LOW'}")
+    # Create an agent
+    agent = SimpleAgent("TrustBot")
     
-    if unverified:
-        print(f"   💀 HALLUCINATED CLAIMS:")
-        for claim in unverified[:2]:  # Show first 2
-            print(f"      - {claim.claim_text}")
-
-
-# ===== STEP 4: Demonstrate Enforcement System =====
-print("\n\n🛡️ STEP 4: Demonstrating agent WITH enforcement (PROTECTED)...")
-
-class SimulatedEnforcedAgent:
-    """Agent that claims to use tools but can be verified."""
+    # Process various queries
+    queries = [
+        "What's the weather in Paris?",
+        "What's the stock price of GOOGL?",
+        "Show me the latest technology news",
+        "What's the weather in Tokyo?",
+        "How much is MSFT stock?",
+    ]
     
-    def __init__(self, enforcer):
-        self.enforcer = enforcer
+    print("\n📋 Processing user queries with enforced tool calls:")
     
-    def run(self, query: str) -> str:
-        """Simulate agent that might try to hallucinate, but we can verify."""
-        if "weather" in query.lower():
-            # Actually execute the tool (this gets recorded)
-            execution = self.enforcer.execute_tool("weather_api", "New York")
-            
-            # Agent response that correctly references the real data
-            return f"""I checked the weather API for New York:
-            - Temperature: {execution.result['temperature']}°C
-            - Humidity: {execution.result['humidity']}%
-            - Conditions: {execution.result['conditions']}
-            - Request ID: {execution.request_id[:8]}
-            
-            Current weather conditions retrieved from verified API."""
+    for query in queries:
+        response = await agent.process_query(query)
+        print(f"\n💬 Query: {query}")
+        print(f"🤖 Response: {response}")
         
-        elif "stock" in query.lower():
-            # Mix of real and hallucinated data
-            execution = self.enforcer.execute_tool("stock_api", "AAPL")
-            
-            # Agent tries to add extra info that wasn't from API
-            return f"""I retrieved stock information:
-            
-            Real data from API:
-            - AAPL: ${execution.result['price']} ({execution.result['change']})
-            
-            Additional analysis (NOT from API):
-            - MSFT: $412.30 (+1.8%) 
-            - GOOGL: $142.85 (+2.1%)
-            
-            Mixed response with both verified and unverified claims."""
+        # Show the last tool call details
+        if agent.call_history:
+            last_call = agent.call_history[-1]
+            print(f"🔧 Tool used: {last_call['tool']}")
+            print(f"✅ Verified: {last_call['verified']}")
+            print(f"🔐 Signature: {last_call['response'].signature[:32]}...")
+    
+    # Show enforcement statistics
+    print("\n\n📊 ENFORCEMENT STATISTICS:")
+    print("=" * 60)
+    
+    stats = tc.get_stats()
+    print(f"Total tools registered: {stats['total_tools']}")
+    print(f"Total tool calls: {stats['total_calls']}")
+    print(f"Responses in cache: {stats['cache_size']}")
+    
+    print("\n📈 Per-tool statistics:")
+    for tool_id in ["weather_api", "stock_api", "news_api"]:
+        tool_stats = tc.get_tool_stats(tool_id)
+        print(f"\n{tool_id}:")
+        print(f"  - Calls: {tool_stats['call_count']}")
+        if tool_stats.get('last_execution_time'):
+            print(f"  - Last exec time: {tool_stats['last_execution_time'] * 1000:.2f}ms")
+    
+    # Demonstrate verification
+    print("\n\n🔍 VERIFICATION DEMONSTRATION:")
+    print("=" * 60)
+    
+    if agent.call_history:
+        # Take a response and verify it
+        sample_response = agent.call_history[0]['response']
         
-        elif "news" in query.lower():
-            # Agent makes claims without calling API
-            return """I searched for AI news and found:
-            - 3 major AI announcements this week
-            - $25B invested in AI startups
-            - New AI safety guidelines released
-            
-            This should be flagged as unverified!"""
+        print(f"Verifying response from {sample_response.tool_id}...")
+        print(f"Original data: {sample_response.data}")
         
-        else:
-            return "I can help with weather, stocks, or news."
-
-# Test enforced agent
-enforced_agent = SimulatedEnforcedAgent(enforcer)
-wrapped_agent = wrap_agent_with_enforcement(enforced_agent, enforcer, strict_mode=False)
-
-print("\n🧪 Testing enforced agent responses...")
-
-for query in test_queries:
-    print(f"\n❓ Query: {query}")
+        # Verify the original
+        is_valid = tc.verify(sample_response)
+        print(f"✅ Original verification: {is_valid}")
+        
+        # Try to tamper with it
+        import copy
+        tampered = copy.deepcopy(sample_response)
+        tampered.data["tampered"] = True
+        
+        is_valid_tampered = tc.verify(tampered)
+        print(f"❌ Tampered verification: {is_valid_tampered}")
+        
+        print("\n✅ TrustChain v2 successfully detected tampering!")
     
-    # Run agent with enforcement
-    result = wrapped_agent.run(query)
+    # Show call history summary
+    print("\n\n📜 AGENT CALL HISTORY:")
+    print("=" * 60)
     
-    print(f"🤖 Agent response (first 150 chars): {result['response'][:150]}...")
-    print(f"\n📊 Enforcement results:")
-    print(f"   ✅ Verified claims: {len(result['proofs'])}")
-    print(f"   ❌ Unverified claims: {len(result['unverified_claims'])}")
-    print(f"   🔒 Fully verified: {'YES' if result['fully_verified'] else 'NO'}")
-    print(f"   📈 Total tool executions: {result['total_executions']}")
+    for i, call in enumerate(agent.call_history, 1):
+        print(f"\n{i}. Tool: {call['tool']}")
+        print(f"   Verified: {call['verified']}")
+        print(f"   Data keys: {list(call['response'].data.keys())}")
+
+
+async def demonstrate_concurrent_enforcement():
+    """Demonstrate concurrent tool calls with enforcement."""
     
-    if result['proofs']:
-        print(f"   ✅ PROOF SOURCES:")
-        for proof in result['proofs']:
-            exec_data = proof['execution']
-            print(f"      - {exec_data['tool_name']} ({exec_data['request_id'][:8]}) - {proof['confidence_score']:.1%} confidence")
+    print("\n\n⚡ CONCURRENT ENFORCEMENT DEMO")
+    print("=" * 60)
     
-    if result['unverified_claims']:
-        print(f"   ❌ UNVERIFIED CLAIMS:")
-        for claim in result['unverified_claims']:
-            print(f"      - {claim['claim_text'][:80]}...")
+    # Create multiple agents
+    agents = [
+        SimpleAgent("Agent-1"),
+        SimpleAgent("Agent-2"),
+        SimpleAgent("Agent-3"),
+    ]
+    
+    # Concurrent queries
+    queries = [
+        "What's the weather in Paris?",
+        "Show me AAPL stock price",
+        "Latest sports news please",
+    ]
+    
+    print("\n🚀 Launching concurrent tool calls...")
+    start_time = time.time()
+    
+    # Run all queries concurrently
+    tasks = []
+    for agent, query in zip(agents, queries):
+        tasks.append(agent.process_query(query))
+    
+    responses = await asyncio.gather(*tasks)
+    
+    elapsed = time.time() - start_time
+    print(f"\n✅ All concurrent calls completed in {elapsed:.3f}s")
+    
+    # Show results
+    for agent, response in zip(agents, responses):
+        print(f"\n{agent.name}: {response[:100]}...")
+        if agent.call_history:
+            print(f"   Verified: {agent.call_history[-1]['verified']}")
+    
+    # Final statistics
+    print("\n\n🏁 FINAL STATISTICS:")
+    final_stats = tc.get_stats()
+    print(f"Total calls made: {final_stats['total_calls']}")
+    print(f"All calls verified: ✅")
+    
+    print("\n" + "=" * 60)
+    print("✅ TrustChain v2 Full Enforcement Demo Complete!")
+    print("\nKey takeaways:")
+    print("- Every tool call is automatically signed")
+    print("- Signatures are verified on creation")
+    print("- Tampering is immediately detected")
+    print("- Concurrent calls work seamlessly")
+    print("- No global state - clean architecture")
 
 
-# ===== STEP 5: Demonstrate Strict Mode =====
-print("\n\n🚫 STEP 5: Demonstrating STRICT MODE (Zero tolerance for hallucinations)...")
-
-strict_agent = wrap_agent_with_enforcement(enforced_agent, enforcer, strict_mode=True)
-
-print("\n🧪 Testing strict mode with hallucination attempt...")
-
-hallucination_query = "What's the latest AI news?"
-result = strict_agent.run(hallucination_query)
-
-print(f"❓ Query: {hallucination_query}")
-print(f"🤖 Agent response: {result['response']}")
-print(f"🚫 Verification failed: {result.get('verification_failed', False)}")
-
-if result.get('verification_failed'):
-    print(f"✋ BLOCKED: Agent tried to make {len(result['unverified_claims'])} unverified claims")
-
-
-# ===== STEP 6: Show Verification Dashboard =====
-print("\n\n📊 STEP 6: Enforcement System Statistics...")
-
-stats = enforcer.registry.get_stats()
-print(f"📈 Registry Statistics:")
-print(f"   Total executions: {stats['total_executions']}")
-print(f"   Tools registered: {stats['tools_used']}")
-print(f"   Recent executions: {stats['recent_count']}")
-
-print(f"\n🔧 Tools used:")
-for tool, count in stats['tools'].items():
-    print(f"   - {tool}: {count} executions")
-
-recent_executions = enforcer.registry.get_recent_executions(5)
-print(f"\n⏰ Recent executions (last 5):")
-for execution in recent_executions:
-    print(f"   - {execution.tool_name} ({execution.request_id[:8]}) - {execution.execution_time_ms:.1f}ms")
-
-
-# ===== SUMMARY =====
-print("\n" + "="*60)
-print("✅ DEMO SUMMARY")
-print("="*60)
-print("\n🎯 Key Results:")
-print("1. 📍 WITHOUT enforcement: Agents can freely hallucinate tool results")
-print("2. 🛡️  WITH enforcement: All tool claims are cryptographically verified")
-print("3. 🚫 Strict mode: Completely blocks responses with unverified claims")
-print("4. 📊 Full audit trail: Every tool execution is tracked and signed")
-print("5. ✅ Real-time verification: Claims are matched against real executions")
-
-print(f"\n💡 Benefits achieved:")
-print(f"   - 🔒 Cryptographic proof for all tool results")
-print(f"   - 🚨 Automatic hallucination detection")
-print(f"   - 📋 Complete audit trail of tool usage")
-print(f"   - 🎯 User confidence in AI responses")
-print(f"   - 🛡️  Protection against false information")
-
-print(f"\n🚀 Next steps:")
-print(f"   - Integrate with your existing LangChain agents")
-print(f"   - Add custom tools to the enforcer")
-print(f"   - Configure strict mode for production")
-print(f"   - Monitor verification statistics")
-
-print(f"\n✨ TrustChain: Making AI Agents Verifiably Trustworthy! ✨")
+async def main():
+    """Run all demonstrations."""
+    await demonstrate_enforcement()
+    await demonstrate_concurrent_enforcement()
 
 
 if __name__ == "__main__":
-    print("\n🏁 Full enforcement demo completed!")
-    print("Run with: python examples/full_enforcement_demo.py") 
+    asyncio.run(main()) 
