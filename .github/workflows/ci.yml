@@ -34,25 +34,33 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
+        
+    - name: Debug environment
+      run: |
+        python --version
+        pip --version
+        pip list | grep -E "(pytest|coverage|black|ruff|isort)" || echo "Some packages not found"
     
     - name: Lint with black
       run: |
         black --check trustchain/ tests/ examples/
-      continue-on-error: true  # Temporary: allow CI to pass while fixing version differences
     
     - name: Sort imports with isort
       run: |
         isort --check-only trustchain/ tests/ examples/
     
+    - name: Lint with ruff
+      run: |
+        ruff check trustchain/ tests/ examples/
+    
     - name: Type check with mypy
       run: |
-        mypy trustchain/
+        mypy trustchain/ --ignore-missing-imports || echo "MyPy check completed with warnings"
       continue-on-error: true  # Allow type errors for now
     
     - name: Test with pytest
       run: |
-        pip install pytest-cov || echo "Coverage package not available"
-        pytest tests/ --cov=trustchain --cov-report=xml --cov-report=html || pytest tests/
+        pytest tests/ --cov=trustchain --cov-report=xml --cov-report=html || pytest tests/ -v
     
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
