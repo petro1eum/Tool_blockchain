@@ -158,24 +158,33 @@ class InMemoryVerifier(Verifier):
                             # Try to get trust level from tool metadata or default to MEDIUM
                             tool_trust_level = TrustLevel.MEDIUM
                             tool_id = data.get("tool_id", "unknown")
-                            
+
                             # Look for the tool in the signature engine's registry to get its trust level
-                            if hasattr(self._signature_engine, 'trust_registry') and self._signature_engine.trust_registry:
+                            if (
+                                hasattr(self._signature_engine, "trust_registry")
+                                and self._signature_engine.trust_registry
+                            ):
                                 try:
                                     # Try to get tool metadata from registry
-                                    tool_metadata = getattr(self._signature_engine.trust_registry, 'get_tool', lambda x: None)(tool_id)
-                                    if tool_metadata and hasattr(tool_metadata, 'trust_level'):
+                                    tool_metadata = getattr(
+                                        self._signature_engine.trust_registry,
+                                        "get_tool",
+                                        lambda x: None,
+                                    )(tool_id)
+                                    if tool_metadata and hasattr(
+                                        tool_metadata, "trust_level"
+                                    ):
                                         tool_trust_level = tool_metadata.trust_level
-                                except:
+                                except Exception:
                                     pass
-                            
+
                             # Fallback: check if tool trust level is in the data itself
-                            if 'trust_level' in data:
+                            if "trust_level" in data:
                                 try:
-                                    tool_trust_level = TrustLevel(data['trust_level'])
-                                except:
+                                    tool_trust_level = TrustLevel(data["trust_level"])
+                                except Exception:
                                     pass
-                            
+
                             return VerificationResult.success(
                                 request_id=data.get("request_id", "unknown"),
                                 tool_id=data.get("tool_id", "unknown"),
@@ -262,7 +271,7 @@ class TrustRegistryVerifier(Verifier):
         try:
             # Get key metadata from trust registry
             # Note: This is synchronous call, in real implementation would need async handling
-            if hasattr(self.trust_registry, 'get_key'):
+            if hasattr(self.trust_registry, "get_key"):
                 key_metadata = self.trust_registry.get_key(signature.public_key_id)
             else:
                 # Fallback for registry types without get_key method
@@ -285,9 +294,12 @@ class TrustRegistryVerifier(Verifier):
             try:
                 # Recreate canonical data and hash
                 import json
+
                 canonical_data = json.dumps(data, sort_keys=True, separators=(",", ":"))
-                
+
                 # Get expected hash
+                from trustchain.core.crypto import get_crypto_engine
+
                 crypto_engine = get_crypto_engine()
                 expected_hash = crypto_engine.hash_data(canonical_data)
 
@@ -306,19 +318,21 @@ class TrustRegistryVerifier(Verifier):
 
                 # Create temporary key pair for verification
                 import base64
-                from trustchain.core.crypto import get_crypto_engine
-                
+
                 crypto_engine = get_crypto_engine()
-                
+
                 # For Ed25519, verify signature directly
                 if signature.algorithm == SignatureAlgorithm.ED25519:
                     public_key_bytes = base64.b64decode(key_metadata.public_key)
                     hash_bytes = signature.signed_hash.split(":", 1)[1].encode()
                     signature_bytes = base64.b64decode(signature.signature)
-                    
+
                     # Use crypto engine for verification
                     is_valid = crypto_engine.verify_signature(
-                        public_key_bytes, hash_bytes, signature_bytes, signature.algorithm
+                        public_key_bytes,
+                        hash_bytes,
+                        signature_bytes,
+                        signature.algorithm,
                     )
                 else:
                     # Other algorithms would be handled here
@@ -341,7 +355,9 @@ class TrustRegistryVerifier(Verifier):
                         signature_id=signature.public_key_id,
                         verifier_id=self.verifier_id,
                         algorithm=signature.algorithm,
-                        trust_level=getattr(key_metadata, 'trust_level', TrustLevel.MEDIUM),
+                        trust_level=getattr(
+                            key_metadata, "trust_level", TrustLevel.MEDIUM
+                        ),
                         verification_time_ms=(time.time() - start_time) * 1000,
                     )
                 else:
@@ -354,7 +370,7 @@ class TrustRegistryVerifier(Verifier):
                         error_message="Signature verification failed",
                         algorithm=signature.algorithm,
                     )
-                
+
                 self._cache_result(cache_key, result)
                 return result
 
@@ -387,11 +403,12 @@ class TrustRegistryVerifier(Verifier):
         """Cache verification result."""
         self._verification_cache[cache_key] = result
         self._cache_timestamps[cache_key] = time.time()
-        
+
         # Clean old cache entries
         current_time = time.time()
         expired_keys = [
-            key for key, timestamp in self._cache_timestamps.items()
+            key
+            for key, timestamp in self._cache_timestamps.items()
             if current_time - timestamp > self.cache_ttl
         ]
         for key in expired_keys:
@@ -402,7 +419,7 @@ class TrustRegistryVerifier(Verifier):
         """Check if this verifier can verify the signature."""
         try:
             # Check if we have the key in the registry
-            if hasattr(self.trust_registry, 'get_key'):
+            if hasattr(self.trust_registry, "get_key"):
                 key_metadata = self.trust_registry.get_key(signature.public_key_id)
                 return key_metadata is not None
             else:
@@ -536,7 +553,7 @@ class SignatureEngine:
             signature=signature,
             execution_time_ms=execution_time_ms,
         )
-        
+
         # Set trust level in metadata if provided
         if trust_level is not None:
             signed_response.trust_metadata.trust_level = trust_level

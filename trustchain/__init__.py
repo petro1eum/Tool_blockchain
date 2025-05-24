@@ -13,9 +13,8 @@ import asyncio
 import platform
 
 if platform.system() == "Windows":
-    if hasattr(asyncio, 'WindowsProactorEventLoopPolicy'):
+    if hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
 
 
 __version__ = "0.1.0"
@@ -69,8 +68,8 @@ from trustchain.utils.exceptions import (
 try:
     from trustchain.monitoring.hallucination_detector import (
         HallucinationDetector,
-        LLMResponseInterceptor,
         HallucinationError,
+        LLMResponseInterceptor,
         create_hallucination_detector,
     )
 except ImportError:
@@ -82,14 +81,14 @@ except ImportError:
 # Tool execution enforcement
 try:
     from trustchain.monitoring.tool_enforcement import (
+        EnforcedAgent,
+        ResponseVerifier,
         ToolExecutionEnforcer,
         ToolExecutionRegistry,
-        ResponseVerifier,
-        EnforcedAgent,
-        create_tool_enforcer,
-        create_integrated_security_system,
-        wrap_agent_with_enforcement,
         UnauthorizedToolExecution,
+        create_integrated_security_system,
+        create_tool_enforcer,
+        wrap_agent_with_enforcement,
     )
 except ImportError:
     ToolExecutionEnforcer = None
@@ -103,11 +102,11 @@ except ImportError:
 # Automatic tool call interception
 try:
     from trustchain.monitoring.tool_enforcement_interceptor import (
+        EnforcementContext,
         ToolCallInterceptor,
         UnauthorizedDirectToolCall,
-        enable_automatic_enforcement,
         disable_automatic_enforcement,
-        EnforcementContext,
+        enable_automatic_enforcement,
     )
 except ImportError:
     ToolCallInterceptor = None
@@ -180,7 +179,7 @@ __all__ = [
     "ChainIntegrityError",
     # Hallucination Detection
     "HallucinationDetector",
-    "LLMResponseInterceptor", 
+    "LLMResponseInterceptor",
     "HallucinationError",
     "create_hallucination_detector",
     # Tool Execution Enforcement
@@ -218,6 +217,3 @@ def check_dependencies() -> dict:
         "openai": OpenAITrustedFunction is not None,
         "monitoring": PrometheusMetrics is not None,
     }
-
-
-

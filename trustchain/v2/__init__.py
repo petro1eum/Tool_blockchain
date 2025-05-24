@@ -13,14 +13,15 @@ __version__ = "2.0.0"
 
 __all__ = [
     "TrustChain",
-    "TrustChainConfig", 
+    "TrustChainConfig",
     "SignedResponse",
     "Storage",
     "MemoryStorage",
 ]
 
+
 # Convenience function for quick start
 def create_trustchain(**config_kwargs) -> TrustChain:
     """Create a TrustChain instance with custom configuration."""
     config = TrustChainConfig(**config_kwargs)
-    return TrustChain(config) 
+    return TrustChain(config)

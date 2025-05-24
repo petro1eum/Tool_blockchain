@@ -2,18 +2,19 @@
 """Basic usage example for TrustChain library v2."""
 
 import asyncio
-import sys
 import time
 from typing import Any, Dict
 
 from trustchain.v2 import TrustChain, TrustChainConfig
 
 # Create TrustChain instance with configuration
-tc = TrustChain(TrustChainConfig(
-    enable_nonce=False,  # Disable nonce for simpler examples
-    cache_ttl=3600,
-    max_cached_responses=100,
-))
+tc = TrustChain(
+    TrustChainConfig(
+        enable_nonce=False,  # Disable nonce for simpler examples
+        cache_ttl=3600,
+        max_cached_responses=100,
+    )
+)
 
 
 # Example 1: Simple trusted tool
@@ -181,11 +182,13 @@ async def main():
     print("\n5. Tool Statistics:")
     weather_stats = tc.get_tool_stats("weather_api_v1")
     print(f"   Weather API calls: {weather_stats['call_count']}")
-    print(f"   Last execution time: {weather_stats.get('last_execution_time', 0) * 1000:.2f}ms")
-    
+    print(
+        f"   Last execution time: {weather_stats.get('last_execution_time', 0) * 1000:.2f}ms"
+    )
+
     # Overall stats
     overall_stats = tc.get_stats()
-    print(f"\n   Overall statistics:")
+    print("\n   Overall statistics:")
     print(f"   Total tools: {overall_stats['total_tools']}")
     print(f"   Total calls: {overall_stats['total_calls']}")
     print(f"   Cache size: {overall_stats['cache_size']}")
@@ -197,7 +200,7 @@ async def main():
     print(f"   Algorithm used: {tc._signer.algorithm}")
     print(f"   Signature ID: {weather_response.signature_id}")
     print(f"   Timestamp: {weather_response.timestamp}")
-    
+
     # Verify other responses too
     print(f"   Payment response valid: {tc.verify(payment_response)}")
     print(f"   Calculator response valid: {tc.verify(calc_response)}")
@@ -210,7 +213,7 @@ async def main():
         process_payment(-100, "test@example.com")
     except Exception as e:
         print(f"   Expected error caught: {type(e).__name__}: {e}")
-    
+
     # Now try with valid amount
     try:
         valid_payment = process_payment(50.0, "test@example.com")

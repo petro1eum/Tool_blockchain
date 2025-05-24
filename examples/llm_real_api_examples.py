@@ -21,10 +21,12 @@ from typing import Any, Dict
 from trustchain.v2 import TrustChain, TrustChainConfig
 
 # Create TrustChain instance with high-security settings
-tc = TrustChain(TrustChainConfig(
-    enable_nonce=True,
-    cache_ttl=600,
-))
+tc = TrustChain(
+    TrustChainConfig(
+        enable_nonce=True,
+        cache_ttl=600,
+    )
+)
 
 # ==================== OPENAI REAL INTEGRATION ====================
 
@@ -390,7 +392,7 @@ async def main():
     """Main demonstration function."""
     print("🔗 TrustChain Real LLM API Examples (v2)")
     print("=" * 50)
-    
+
     print("\n✨ Using TrustChain v2 - Simpler and more powerful!")
     print("   - No global state or complex setup")
     print("   - Just @tc.tool() decorator")

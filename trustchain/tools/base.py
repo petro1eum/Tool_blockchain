@@ -214,7 +214,7 @@ class BaseTrustedTool(ABC):
                 if not verification_result.valid:
                     error_msg = verification_result.error_message
                     self.stats["signature_failures"] += 1
-                    
+
                     # Log security violation
                     print(
                         f"🔒 [SECURITY] Tool execution rejected due to verification failure: {self.tool_id}",
@@ -224,7 +224,7 @@ class BaseTrustedTool(ABC):
                         f"🔒 [SECURITY] Verification error: {error_msg}",
                         file=sys.stderr,
                     )
-                    
+
                     raise SignatureVerificationError(
                         f"Response signature verification failed: {verification_result.error_message}",
                         tool_id=self.tool_id,

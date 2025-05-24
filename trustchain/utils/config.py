@@ -274,7 +274,9 @@ def _load_from_env() -> Dict[str, Any]:
     if os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH"):
         max_chain_length = os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH")
         if max_chain_length:
-            config.setdefault("security", {})["max_chain_length"] = int(max_chain_length)
+            config.setdefault("security", {})["max_chain_length"] = int(
+                max_chain_length
+            )
 
     # Monitoring config
     if os.getenv("TRUSTCHAIN_MONITORING_ENABLED"):

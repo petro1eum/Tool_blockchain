@@ -1,0 +1,62 @@
+{
+  "name": "trustchain-js",
+  "version": "2.0.0",
+  "description": "JavaScript SDK for TrustChain - Cryptographically verified tool execution",
+  "main": "trustchain.js",
+  "types": "trustchain.d.ts",
+  "files": [
+    "trustchain.js",
+    "trustchain.d.ts",
+    "README.md",
+    "examples/"
+  ],
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "echo 'No build step needed for vanilla JS'",
+    "lint": "eslint trustchain.js",
+    "docs": "jsdoc trustchain.js -d docs"
+  },
+  "keywords": [
+    "trustchain",
+    "cryptography",
+    "verification",
+    "tools",
+    "security",
+    "signatures",
+    "blockchain",
+    "ai",
+    "llm",
+    "javascript",
+    "nodejs",
+    "browser"
+  ],
+  "author": "TrustChain Team",
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/trustchain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/trustchain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/trustchain/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browser": {
+    "crypto": false
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jsdoc": "^4.0.0"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "ws": ">=8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ws": {
+      "optional": true
+    }
+  }
+} 

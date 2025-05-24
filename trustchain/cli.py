@@ -22,6 +22,7 @@ from trustchain import (
 from trustchain.core.crypto import get_crypto_engine
 from trustchain.core.models import KeyMetadata
 from trustchain.utils.config import create_config_template, load_config, save_config
+from trustchain.v2 import TrustChain, TrustChainConfig
 
 app = typer.Typer(
     name="trustchain",
@@ -378,6 +379,79 @@ def test():
             raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]❌ Test error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+@typer.option("--host", default="0.0.0.0", help="Host to bind to")
+@typer.option("--port", default=8000, help="Port to bind to")
+@typer.option("--reload", is_flag=True, help="Enable auto-reload for development")
+@typer.option("--workers", default=1, help="Number of worker processes")
+@typer.option("--config", help="Path to TrustChain configuration file")
+def serve(host: str, port: int, reload: bool, workers: int, config: Optional[str]):
+    """Start TrustChain web server for JavaScript/API access."""
+    try:
+        from trustchain.web_api import start_server
+        
+        console.print(f"🚀 Starting TrustChain web server on {host}:{port}")
+        
+        # Load configuration if provided
+        if config:
+            console.print(f"📁 Loading configuration from {config}")
+            # TODO: Implement config file loading
+            tc_config = TrustChainConfig()
+        else:
+            tc_config = TrustChainConfig()
+        
+        # Create TrustChain instance
+        tc = TrustChain(tc_config)
+        
+        # Add some demo tools if none are registered
+        if not hasattr(tc, '_tools') or not tc._tools:
+            console.print("🔧 Registering demo tools...")
+            
+            @tc.tool('demo_weather')
+            def demo_weather(city: str):
+                """Demo weather API tool."""
+                return {
+                    'city': city,
+                    'temperature': 22,
+                    'condition': 'Sunny',
+                    'humidity': 65
+                }
+            
+            @tc.tool('demo_calculator')
+            def demo_calculator(operation: str, a: float, b: float):
+                """Demo calculator tool."""
+                if operation == 'add':
+                    return {'result': a + b}
+                elif operation == 'subtract':
+                    return {'result': a - b}
+                elif operation == 'multiply':
+                    return {'result': a * b}
+                elif operation == 'divide':
+                    if b == 0:
+                        raise ValueError("Cannot divide by zero")
+                    return {'result': a / b}
+                else:
+                    raise ValueError(f"Unknown operation: {operation}")
+        
+        # Start server
+        start_server(
+            trustchain=tc,
+            host=host,
+            port=port,
+            reload=reload,
+            workers=workers if not reload else 1  # reload only works with 1 worker
+        )
+    except ImportError:
+        console.print("[red]❌ Web API dependencies not installed.[/red]")
+        console.print("Install with: pip install 'trustchain[web]'")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n👋 Server stopped")
+    except Exception as e:
+        console.print(f"[red]❌ Server error: {e}[/red]")
         raise typer.Exit(1)
 
 
