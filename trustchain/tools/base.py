@@ -74,17 +74,29 @@ class BaseTrustedTool(ABC):
     @property
     def signature_engine(self) -> SignatureEngine:
         """Get the signature engine - prefer global engine."""
-        print(f"🔧 [ENGINE DEBUG] Getting signature engine for tool '{self.tool_id}'", flush=True)
+        print(
+            f"🔧 [ENGINE DEBUG] Getting signature engine for tool '{self.tool_id}'",
+            flush=True,
+        )
         # Always use global engine - it has InMemoryVerifier for standalone operation
         global_engine = get_signature_engine()
-        print(f"🔧 [ENGINE DEBUG] Global engine obtained for tool '{self.tool_id}'", flush=True)
-        
+        print(
+            f"🔧 [ENGINE DEBUG] Global engine obtained for tool '{self.tool_id}'",
+            flush=True,
+        )
+
         # If we have initial engine preference, use it instead
         if self._initial_signature_engine is not None:
-            print(f"🔧 [ENGINE DEBUG] Using initial engine for tool '{self.tool_id}'", flush=True)
+            print(
+                f"🔧 [ENGINE DEBUG] Using initial engine for tool '{self.tool_id}'",
+                flush=True,
+            )
             return self._initial_signature_engine
-        
-        print(f"🔧 [ENGINE DEBUG] Using global engine for tool '{self.tool_id}'", flush=True)
+
+        print(
+            f"🔧 [ENGINE DEBUG] Using global engine for tool '{self.tool_id}'",
+            flush=True,
+        )
         return global_engine
 
     def _find_available_signer(self) -> str:
@@ -110,9 +122,18 @@ class BaseTrustedTool(ABC):
             return self.tool_id
         except Exception as e:
             # Print critical error for CI debugging
-            print(f"🚨 [CRITICAL] Failed to create signer for {self.tool_id}: {e}", flush=True)
-            print(f"🚨 [CRITICAL] Available signers: {list(self.signature_engine._signers.keys())}", flush=True)
-            print(f"🚨 [CRITICAL] Available verifiers: {list(self.signature_engine._verifiers.keys())}", flush=True)
+            print(
+                f"🚨 [CRITICAL] Failed to create signer for {self.tool_id}: {e}",
+                flush=True,
+            )
+            print(
+                f"🚨 [CRITICAL] Available signers: {list(self.signature_engine._signers.keys())}",
+                flush=True,
+            )
+            print(
+                f"🚨 [CRITICAL] Available verifiers: {list(self.signature_engine._verifiers.keys())}",
+                flush=True,
+            )
             raise ToolExecutionError(
                 self.tool_id, f"No signers available and failed to create one: {e}"
             )
@@ -217,27 +238,51 @@ class BaseTrustedTool(ABC):
             if verify_response:
                 # Debug output for CI
                 import sys
-                print(f"🚨 [CI VERIFY DEBUG] About to verify response for {self.tool_id}", file=sys.stderr)
-                print(f"🚨 [CI VERIFY DEBUG] Signature engine has {len(self.signature_engine._signers)} signers", file=sys.stderr)
-                print(f"🚨 [CI VERIFY DEBUG] Signature engine has {len(self.signature_engine._verifiers)} verifiers", file=sys.stderr)
-                print(f"🚨 [CI VERIFY DEBUG] Signed response signature key: {signed_response.signature.public_key_id}", file=sys.stderr)
-                
+
+                print(
+                    f"🚨 [CI VERIFY DEBUG] About to verify response for {self.tool_id}",
+                    file=sys.stderr,
+                )
+                print(
+                    f"🚨 [CI VERIFY DEBUG] Signature engine has {len(self.signature_engine._signers)} signers",
+                    file=sys.stderr,
+                )
+                print(
+                    f"🚨 [CI VERIFY DEBUG] Signature engine has {len(self.signature_engine._verifiers)} verifiers",
+                    file=sys.stderr,
+                )
+                print(
+                    f"🚨 [CI VERIFY DEBUG] Signed response signature key: {signed_response.signature.public_key_id}",
+                    file=sys.stderr,
+                )
+
                 verification_result = self.signature_engine.verify_response(
                     signed_response
                 )
-                
-                print(f"🚨 [CI VERIFY DEBUG] Verification result: valid={verification_result.valid}", file=sys.stderr)
+
+                print(
+                    f"🚨 [CI VERIFY DEBUG] Verification result: valid={verification_result.valid}",
+                    file=sys.stderr,
+                )
                 if not verification_result.valid:
-                    print(f"🚨 [CI VERIFY DEBUG] Error: {verification_result.error_message}", file=sys.stderr)
-                    
-                # Temporary CI fallback - if verification fails due to "No verifier available", 
+                    print(
+                        f"🚨 [CI VERIFY DEBUG] Error: {verification_result.error_message}",
+                        file=sys.stderr,
+                    )
+
+                # Temporary CI fallback - if verification fails due to "No verifier available",
                 # set response as verified (since signature was created successfully)
                 if not verification_result.valid:
                     error_msg = verification_result.error_message
                     if "No verifier available" in error_msg:
-                        print(f"🚨 [CI FALLBACK] Using CI fallback - setting response as verified", file=sys.stderr)
+                        print(
+                            f"🚨 [CI FALLBACK] Using CI fallback - setting response as verified",
+                            file=sys.stderr,
+                        )
                         signed_response.trust_metadata.verified = True
-                        signed_response.trust_metadata.verification_timestamp = int(time.time() * 1000)
+                        signed_response.trust_metadata.verification_timestamp = int(
+                            time.time() * 1000
+                        )
                         signed_response.trust_metadata.verifier_id = "ci_fallback"
                         signed_response.trust_metadata.trust_level = self.trust_level
                     else:
@@ -294,9 +339,15 @@ class FunctionTrustedTool(BaseTrustedTool):
     def __init__(
         self, tool_id: str, func: Callable, description: Optional[str] = None, **kwargs
     ):
-        print(f"🔧 [TOOL INIT DEBUG] FunctionTrustedTool.__init__ called for '{tool_id}'", flush=True)
+        print(
+            f"🔧 [TOOL INIT DEBUG] FunctionTrustedTool.__init__ called for '{tool_id}'",
+            flush=True,
+        )
         super().__init__(tool_id, **kwargs)
-        print(f"🔧 [TOOL INIT DEBUG] BaseTrustedTool.__init__ completed for '{tool_id}'", flush=True)
+        print(
+            f"🔧 [TOOL INIT DEBUG] BaseTrustedTool.__init__ completed for '{tool_id}'",
+            flush=True,
+        )
         self.func = func
         self.description = description or f"Trusted tool: {tool_id}"
 

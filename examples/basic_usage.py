@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """Basic usage example for TrustChain library."""
 
-import sys
 import asyncio
+import sys
 import time
 from typing import Any, Dict
 
 # Force unbuffered output for CI debugging
-sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
-sys.stderr.reconfigure(line_buffering=True) if hasattr(sys.stderr, 'reconfigure') else None
+(
+    sys.stdout.reconfigure(line_buffering=True)
+    if hasattr(sys.stdout, "reconfigure")
+    else None
+)
+(
+    sys.stderr.reconfigure(line_buffering=True)
+    if hasattr(sys.stderr, "reconfigure")
+    else None
+)
 
 print("🔧 [CI DEBUG] basic_usage.py started, about to import TrustChain", flush=True)
 
@@ -141,7 +149,7 @@ async def main():
     """Main example function."""
     print("🔗 TrustChain Basic Usage Example")
     print("=" * 50)
-    
+
     # TrustChain should work out of the box - no setup needed!
     print("\n🔧 TrustChain auto-initialization...")
     print("   ✅ Library ready - signatures will be created and verified automatically")
@@ -204,7 +212,9 @@ async def main():
             print(f"   Verification valid: {verification_result.valid}")
             print(f"   Algorithm used: {verification_result.algorithm_used.value}")
             print(f"   Trust level: {verification_result.trust_level.value}")
-            print(f"   Verification time: {verification_result.verification_time_ms:.2f}ms")
+            print(
+                f"   Verification time: {verification_result.verification_time_ms:.2f}ms"
+            )
         else:
             print("   Signature engine not available - using built-in verification")
             print(f"   Response verified: {weather_response.is_verified}")

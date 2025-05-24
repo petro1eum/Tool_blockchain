@@ -141,4 +141,6 @@ def check_dependencies() -> dict:
     }
 
 
-print("🔧 [IMPORT DEBUG] TrustChain __init__.py import completed successfully", flush=True)
+print(
+    "🔧 [IMPORT DEBUG] TrustChain __init__.py import completed successfully", flush=True
+)

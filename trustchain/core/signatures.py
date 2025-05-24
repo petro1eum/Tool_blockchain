@@ -98,9 +98,9 @@ class InMemoryVerifier(Verifier):
 
     def __init__(self, verifier_id: str):
         self.verifier_id = verifier_id
-        self._signature_engine: Optional['SignatureEngine'] = None
+        self._signature_engine: Optional["SignatureEngine"] = None
 
-    def set_signature_engine(self, engine: 'SignatureEngine') -> None:
+    def set_signature_engine(self, engine: "SignatureEngine") -> None:
         """Set reference to the signature engine."""
         self._signature_engine = engine
 
@@ -130,12 +130,15 @@ class InMemoryVerifier(Verifier):
                     try:
                         # Recreate canonical data and hash
                         import json
-                        canonical_data = json.dumps(data, sort_keys=True, separators=(",", ":"))
-                        
+
+                        canonical_data = json.dumps(
+                            data, sort_keys=True, separators=(",", ":")
+                        )
+
                         # Get expected hash
                         crypto_engine = get_crypto_engine()
                         expected_hash = crypto_engine.hash_data(canonical_data)
-                        
+
                         if expected_hash != signature.signed_hash:
                             return VerificationResult.failure(
                                 request_id=data.get("request_id", "unknown"),
@@ -150,9 +153,9 @@ class InMemoryVerifier(Verifier):
                         # Verify signature
                         hash_bytes = signature.signed_hash.split(":", 1)[1].encode()
                         signature_bytes = base64.b64decode(signature.signature)
-                        
+
                         is_valid = signer.key_pair.verify(hash_bytes, signature_bytes)
-                        
+
                         if is_valid:
                             return VerificationResult.success(
                                 request_id=data.get("request_id", "unknown"),
@@ -196,20 +199,24 @@ class InMemoryVerifier(Verifier):
         )
 
     def can_verify(self, signature: SignatureInfo) -> bool:
-        """Check if this verifier can verify the signature."""        
+        """Check if this verifier can verify the signature."""
         if not self._signature_engine:
             print("🚨 [CRITICAL] InMemoryVerifier has no signature engine!")
             return False
-        
+
         # Check if we have a signer with matching key
         for signer_id, signer in self._signature_engine._signers.items():
             if isinstance(signer, KeyPairSigner):
                 if signer.key_pair.key_id == signature.public_key_id:
                     return True
-        
+
         # Only print debug if no matching signer found (potential issue)
-        print(f"🚨 [CRITICAL] InMemoryVerifier: No matching signer for key {signature.public_key_id}")
-        print(f"🚨 [CRITICAL] Available signers: {[s.key_pair.key_id if isinstance(s, KeyPairSigner) else 'unknown' for s in self._signature_engine._signers.values()]}")
+        print(
+            f"🚨 [CRITICAL] InMemoryVerifier: No matching signer for key {signature.public_key_id}"
+        )
+        print(
+            f"🚨 [CRITICAL] Available signers: {[s.key_pair.key_id if isinstance(s, KeyPairSigner) else 'unknown' for s in self._signature_engine._signers.values()]}"
+        )
         return False
 
 
@@ -300,7 +307,9 @@ class SignatureEngine:
             if not self._default_verifier._signature_engine:
                 print("🚨 [DEBUG] CRITICAL: InMemoryVerifier engine reference not set!")
             else:
-                print(f"✅ [DEBUG] InMemoryVerifier properly linked to engine", flush=True)
+                print(
+                    f"✅ [DEBUG] InMemoryVerifier properly linked to engine", flush=True
+                )
 
     def register_signer(self, signer_id: str, signer: Signer) -> None:
         """Register a signer."""
@@ -382,7 +391,7 @@ class SignatureEngine:
     def verify_response(
         self, signed_response: SignedResponse, verifier_id: Optional[str] = None
     ) -> VerificationResult:
-        """Verify a signed response."""        
+        """Verify a signed response."""
         # Choose verifier
         if verifier_id:
             if verifier_id not in self._verifiers:
@@ -401,9 +410,15 @@ class SignatureEngine:
             if not verifier:
                 # Critical error for CI debugging
                 print(f"🚨 [CRITICAL] NO VERIFIER FOUND for {signed_response.tool_id}")
-                print(f"🚨 [CRITICAL] Available verifiers: {list(self._verifiers.keys())}")
-                print(f"🚨 [CRITICAL] Default verifier: {type(self._default_verifier).__name__ if self._default_verifier else 'None'}")
-                print(f"🚨 [CRITICAL] Signature key: {signed_response.signature.public_key_id}")
+                print(
+                    f"🚨 [CRITICAL] Available verifiers: {list(self._verifiers.keys())}"
+                )
+                print(
+                    f"🚨 [CRITICAL] Default verifier: {type(self._default_verifier).__name__ if self._default_verifier else 'None'}"
+                )
+                print(
+                    f"🚨 [CRITICAL] Signature key: {signed_response.signature.public_key_id}"
+                )
                 return VerificationResult.failure(
                     request_id=signed_response.request_id,
                     tool_id=signed_response.tool_id,
