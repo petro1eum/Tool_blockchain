@@ -227,7 +227,7 @@ def load_config(
 
 def _load_from_env() -> Dict[str, Any]:
     """Load configuration from environment variables."""
-    config = {}
+    config: Dict[str, Any] = {}
 
     # Crypto config
     if os.getenv("TRUSTCHAIN_CRYPTO_ALGORITHM"):
@@ -251,7 +251,9 @@ def _load_from_env() -> Dict[str, Any]:
         config.setdefault("registry", {})["redis_host"] = os.getenv("REDIS_HOST")
 
     if os.getenv("REDIS_PORT"):
-        config.setdefault("registry", {})["redis_port"] = int(os.getenv("REDIS_PORT"))
+        redis_port = os.getenv("REDIS_PORT")
+        if redis_port:
+            config.setdefault("registry", {})["redis_port"] = int(redis_port)
 
     if os.getenv("REDIS_PASSWORD"):
         config.setdefault("registry", {})["redis_password"] = os.getenv(
@@ -265,33 +267,31 @@ def _load_from_env() -> Dict[str, Any]:
 
     # Security config
     if os.getenv("TRUSTCHAIN_NONCE_WINDOW"):
-        config.setdefault("security", {})["nonce_window"] = int(
-            os.getenv("TRUSTCHAIN_NONCE_WINDOW")
-        )
+        nonce_window = os.getenv("TRUSTCHAIN_NONCE_WINDOW")
+        if nonce_window:
+            config.setdefault("security", {})["nonce_window"] = int(nonce_window)
 
     if os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH"):
-        config.setdefault("security", {})["max_chain_length"] = int(
-            os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH")
-        )
+        max_chain_length = os.getenv("TRUSTCHAIN_MAX_CHAIN_LENGTH")
+        if max_chain_length:
+            config.setdefault("security", {})["max_chain_length"] = int(max_chain_length)
 
     # Monitoring config
     if os.getenv("TRUSTCHAIN_MONITORING_ENABLED"):
-        enabled = os.getenv("TRUSTCHAIN_MONITORING_ENABLED").lower() in (
-            "true",
-            "1",
-            "yes",
-        )
-        config.setdefault("monitoring", {})["enabled"] = enabled
+        monitoring_enabled = os.getenv("TRUSTCHAIN_MONITORING_ENABLED")
+        if monitoring_enabled:
+            enabled = monitoring_enabled.lower() in ("true", "1", "yes")
+            config.setdefault("monitoring", {})["enabled"] = enabled
 
     if os.getenv("TRUSTCHAIN_METRICS_PORT"):
-        config.setdefault("monitoring", {})["metrics_port"] = int(
-            os.getenv("TRUSTCHAIN_METRICS_PORT")
-        )
+        metrics_port = os.getenv("TRUSTCHAIN_METRICS_PORT")
+        if metrics_port:
+            config.setdefault("monitoring", {})["metrics_port"] = int(metrics_port)
 
     if os.getenv("TRUSTCHAIN_DASHBOARD_PORT"):
-        config.setdefault("monitoring", {})["dashboard_port"] = int(
-            os.getenv("TRUSTCHAIN_DASHBOARD_PORT")
-        )
+        dashboard_port = os.getenv("TRUSTCHAIN_DASHBOARD_PORT")
+        if dashboard_port:
+            config.setdefault("monitoring", {})["dashboard_port"] = int(dashboard_port)
 
     if os.getenv("PROMETHEUS_ENDPOINT"):
         config.setdefault("monitoring", {})["prometheus_endpoint"] = os.getenv(
@@ -305,8 +305,10 @@ def _load_from_env() -> Dict[str, Any]:
 
     # Global config
     if os.getenv("TRUSTCHAIN_DEBUG"):
-        debug = os.getenv("TRUSTCHAIN_DEBUG").lower() in ("true", "1", "yes")
-        config["debug"] = debug
+        debug_env = os.getenv("TRUSTCHAIN_DEBUG")
+        if debug_env:
+            debug = debug_env.lower() in ("true", "1", "yes")
+            config["debug"] = debug
 
     if os.getenv("TRUSTCHAIN_ENVIRONMENT"):
         config["environment"] = os.getenv("TRUSTCHAIN_ENVIRONMENT")

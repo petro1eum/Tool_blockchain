@@ -49,7 +49,7 @@ class RequestContext(BaseModel):
 
     @field_validator("timestamp")
     @classmethod
-    def validate_timestamp(cls, v):
+    def validate_timestamp(cls, v: Any) -> int:
         """Ensure timestamp is reasonable."""
         now = int(time.time() * 1000)
         if abs(v - now) > 300_000:  # 5 minutes
@@ -58,7 +58,7 @@ class RequestContext(BaseModel):
 
     @field_validator("request_id", "nonce")
     @classmethod
-    def validate_ids(cls, v):
+    def validate_ids(cls, v: Any) -> str:
         """Ensure IDs are non-empty strings."""
         if not v or not isinstance(v, str):
             raise ValueError("ID must be a non-empty string")
@@ -77,7 +77,7 @@ class SignatureInfo(BaseModel):
 
     @field_validator("signature", "signed_hash")
     @classmethod
-    def validate_non_empty(cls, v):
+    def validate_non_empty(cls, v: Any) -> str:
         """Ensure critical fields are non-empty."""
         if not v or not isinstance(v, str):
             raise ValueError("Field must be a non-empty string")
@@ -85,7 +85,7 @@ class SignatureInfo(BaseModel):
 
     @field_validator("signed_hash")
     @classmethod
-    def validate_hash_format(cls, v):
+    def validate_hash_format(cls, v: Any) -> str:
         """Ensure hash is in format 'algorithm:hash'."""
         if ":" not in v:
             raise ValueError("Hash must be in format 'algorithm:hash'")
@@ -104,7 +104,7 @@ class TrustMetadata(BaseModel):
 
     @field_validator("verification_timestamp")
     @classmethod
-    def set_verification_time(cls, v):
+    def set_verification_time(cls, v: Any) -> int:
         """Set verification timestamp if verified."""
         if v is None:
             return int(time.time() * 1000)
@@ -124,7 +124,7 @@ class ChainLink(BaseModel):
 
     @field_validator("step_number")
     @classmethod
-    def validate_step_number(cls, v):
+    def validate_step_number(cls, v: Any) -> int:
         """Ensure step number is non-negative."""
         if v < 0:
             raise ValueError("Step number must be non-negative")
@@ -132,16 +132,17 @@ class ChainLink(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_chain_logic(cls, values):
+    def validate_chain_logic(cls, values: Any) -> Any:
         """Validate chain link logic."""
         if isinstance(values, dict):
             step_number = values.get("step_number")
             parent_hash = values.get("parent_hash")
 
-            if step_number == 0 and parent_hash is not None:
-                raise ValueError("First step cannot have parent hash")
-            if step_number > 0 and parent_hash is None:
-                raise ValueError("Non-first step must have parent hash")
+            if step_number is not None:
+                if step_number == 0 and parent_hash is not None:
+                    raise ValueError("First step cannot have parent hash")
+                if step_number > 0 and parent_hash is None:
+                    raise ValueError("Non-first step must have parent hash")
 
         return values
 
@@ -176,7 +177,7 @@ class SignedResponse(BaseModel):
 
     @field_validator("data")
     @classmethod
-    def validate_data(cls, v):
+    def validate_data(cls, v: Any) -> Any:
         """Ensure data is serializable."""
         try:
             import json
@@ -197,7 +198,7 @@ class SignedResponse(BaseModel):
             "version": self.version,
         }
 
-    def verify_signature(self, verifier_func) -> bool:
+    def verify_signature(self, verifier_func: Any) -> bool:
         """Verify the signature using provided verifier function."""
         try:
             canonical_data = self.to_canonical_dict()
@@ -316,7 +317,7 @@ class KeyMetadata(BaseModel):
 
     @field_validator("valid_until")
     @classmethod
-    def validate_validity_period(cls, v, info):
+    def validate_validity_period(cls, v: Any, info: Any) -> Optional[int]:
         """Ensure validity period is logical."""
         if v is not None and hasattr(info, "data") and info.data:
             valid_from = info.data.get("valid_from", 0)
@@ -355,7 +356,7 @@ class NonceEntry(BaseModel):
 
     @field_validator("expires_at")
     @classmethod
-    def validate_expiration(cls, v, info):
+    def validate_expiration(cls, v: Any, info: Any) -> int:
         """Ensure expiration is in the future."""
         timestamp = int(time.time() * 1000)
         if hasattr(info, "data") and info.data:
@@ -389,7 +390,7 @@ class ChainMetadata(BaseModel):
 
     @field_validator("steps")
     @classmethod
-    def validate_step_sequence(cls, v):
+    def validate_step_sequence(cls, v: Any) -> List[ChainLink]:
         """Ensure steps are in correct sequence."""
         for i, step in enumerate(v):
             if step.step_number != i:

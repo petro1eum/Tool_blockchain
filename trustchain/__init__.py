@@ -13,7 +13,8 @@ import asyncio
 import platform
 
 if platform.system() == "Windows":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    if hasattr(asyncio, 'WindowsProactorEventLoopPolicy'):
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 print("🔧 [IMPORT DEBUG] TrustChain __init__.py starting to load", flush=True)
 

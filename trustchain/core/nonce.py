@@ -5,7 +5,7 @@ import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from trustchain.core.crypto import generate_nonce
 from trustchain.core.models import NonceEntry
@@ -28,7 +28,7 @@ def _is_ci_environment() -> bool:
     return any(os.getenv(indicator) for indicator in ci_indicators)
 
 
-def _get_ci_tolerant_timeouts() -> tuple[int, int]:
+def _get_ci_tolerant_timeouts() -> Tuple[int, int]:
     """Get CI-tolerant timeout values."""
     if _is_ci_environment():
         return 1800, 1800  # 30 minutes for CI

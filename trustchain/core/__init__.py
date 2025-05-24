@@ -1,8 +1,26 @@
 """Core functionality for TrustChain."""
 
 from trustchain.core.crypto import *
-from trustchain.core.models import *
-from trustchain.core.nonce import *
+from trustchain.core.models import (
+    SignedResponse,
+    TrustMetadata,
+    ChainLink,
+    VerificationResult,
+    RequestContext,  # Use the models version
+    SignatureInfo,
+    TrustLevel,
+    SignatureAlgorithm,
+    KeyMetadata,
+    NonceEntry,
+)
+from trustchain.core.nonce import (
+    NonceManager,
+    NonceGenerator,
+    NonceValidator,
+    NonceStore,
+    MemoryNonceStore,
+    RequestContext as NonceRequestContext,  # Rename to avoid conflict
+)
 from trustchain.core.signatures import *
 
 __all__ = [
@@ -13,6 +31,10 @@ __all__ = [
     "VerificationResult",
     "RequestContext",
     "SignatureInfo",
+    "TrustLevel",
+    "SignatureAlgorithm",
+    "KeyMetadata",
+    "NonceEntry",
     # Crypto
     "KeyPair",
     "Ed25519KeyPair",
@@ -25,4 +47,8 @@ __all__ = [
     # Nonce
     "NonceManager",
     "NonceGenerator",
+    "NonceValidator",
+    "NonceStore",
+    "MemoryNonceStore",
+    "NonceRequestContext",
 ]
