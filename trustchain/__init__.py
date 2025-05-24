@@ -65,6 +65,40 @@ from trustchain.utils.exceptions import (
     TrustChainError,
 )
 
+# Hallucination detection
+try:
+    from trustchain.monitoring.hallucination_detector import (
+        HallucinationDetector,
+        LLMResponseInterceptor,
+        HallucinationError,
+        create_hallucination_detector,
+    )
+except ImportError:
+    HallucinationDetector = None
+    LLMResponseInterceptor = None
+    HallucinationError = None
+    create_hallucination_detector = None
+
+# Tool execution enforcement
+try:
+    from trustchain.monitoring.tool_enforcement import (
+        ToolExecutionEnforcer,
+        ToolExecutionRegistry,
+        ResponseVerifier,
+        EnforcedAgent,
+        create_tool_enforcer,
+        wrap_agent_with_enforcement,
+        UnauthorizedToolExecution,
+    )
+except ImportError:
+    ToolExecutionEnforcer = None
+    ToolExecutionRegistry = None
+    ResponseVerifier = None
+    EnforcedAgent = None
+    create_tool_enforcer = None
+    wrap_agent_with_enforcement = None
+    UnauthorizedToolExecution = None
+
 # Optional imports (fail gracefully if dependencies not installed)
 try:
     from trustchain.registry.redis import RedisRegistry
@@ -78,7 +112,7 @@ except ImportError:
 
 try:
     from trustchain.integrations.langchain import make_langchain_tool
-except ImportError:
+except (ImportError, NameError):
     make_langchain_tool = None
 
 try:
@@ -127,6 +161,19 @@ __all__ = [
     "NonceReplayError",
     "KeyNotFoundError",
     "ChainIntegrityError",
+    # Hallucination Detection
+    "HallucinationDetector",
+    "LLMResponseInterceptor", 
+    "HallucinationError",
+    "create_hallucination_detector",
+    # Tool Execution Enforcement
+    "ToolExecutionEnforcer",
+    "ToolExecutionRegistry",
+    "ResponseVerifier",
+    "EnforcedAgent",
+    "create_tool_enforcer",
+    "wrap_agent_with_enforcement",
+    "UnauthorizedToolExecution",
 ]
 
 # Version info

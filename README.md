@@ -45,6 +45,53 @@ TrustChain is a **zero-trust framework** for creating cryptographically signed A
 - 🔧 **Developer Friendly** - Add trust with just a decorator
 - 📊 **Production Ready** - Comprehensive monitoring and error handling
 - 🧠 **AI Hallucination Detection** - [See live demo](examples/README_HALLUCINATION_DEMO.md)
+- 🛡️ **Tool Execution Enforcement** - Prevents agents from lying about tool usage
+
+---
+
+## 🛡️ Tool Execution Enforcement - NEW!
+
+**The ultimate solution to prevent AI agents from hallucinating tool results.** This feature ensures that every tool claim made by an agent is backed by cryptographic proof of actual execution.
+
+### 🎯 The Problem
+
+```python
+# AI Agent says:
+"Я проверил погоду через weather_api и температура 25°C"
+
+# BUT: weather_api was NEVER actually called!
+# This is a HALLUCINATION that can mislead users
+```
+
+### ✅ TrustChain Solution
+
+```python
+from trustchain import create_tool_enforcer, wrap_agent_with_enforcement
+
+# Setup enforcement system
+enforcer = create_tool_enforcer(signature_engine, [weather_tool, stock_tool])
+
+# Wrap any agent with verification
+protected_agent = wrap_agent_with_enforcement(
+    your_agent, 
+    enforcer, 
+    strict_mode=True  # Zero tolerance for hallucinations
+)
+
+# All responses are automatically verified
+result = protected_agent.run("What's the weather in Tokyo?")
+print(result['response'])  # Shows [✓ Verified] markers for real tool calls
+```
+
+### 🔐 Key Benefits
+
+- ✅ **0% hallucinated tool claims** - Agents cannot lie about calling tools
+- ✅ **Cryptographic proof** for every tool result  
+- ✅ **Real-time detection** of deception attempts
+- ✅ **Complete audit trail** of all tool executions
+- ✅ **Framework integration** for LangChain, AutoGen, etc.
+
+📖 **[Complete Tool Enforcement Guide](TOOL_ENFORCEMENT_GUIDE.md)**
 
 ---
 
