@@ -88,7 +88,7 @@ class AIAgent:
     async def _call_weather_tool(self, location: str) -> Dict[str, Any]:
         """AI calls weather tool - this gets signed!"""
         print(f"  🛠️  AI calling weather_tool for {location}")
-        result = await weather_tool(location, verify_response=False)
+        result = await weather_tool(location)
 
         self.tool_calls_made.append(
             {
@@ -110,9 +110,7 @@ class AIAgent:
     ) -> Dict[str, Any]:
         """AI calls payment tool - this gets signed!"""
         print(f"  🛠️  AI calling payment_tool for ${amount} {currency}")
-        result = await payment_processor(
-            amount, currency, recipient, verify_response=False
-        )
+        result = await payment_processor(amount, currency, recipient)
 
         self.tool_calls_made.append(
             {
@@ -136,7 +134,7 @@ class AIAgent:
     async def _call_calculator_tool(self, expression: str) -> Dict[str, Any]:
         """AI calls calculator tool - this gets signed!"""
         print(f"  🛠️  AI calling calculator_tool for '{expression}'")
-        result = await calculator_tool(expression, verify_response=False)
+        result = await calculator_tool(expression)
 
         self.tool_calls_made.append(
             {
@@ -156,7 +154,7 @@ class AIAgent:
     async def _call_analytics_tool(self, data: List[float]) -> Dict[str, Any]:
         """AI calls analytics tool - this gets signed!"""
         print(f"  🛠️  AI calling analytics_tool with {len(data)} data points")
-        result = await analytics_tool(data, verify_response=False)
+        result = await analytics_tool(data)
 
         self.tool_calls_made.append(
             {
@@ -328,7 +326,7 @@ class LLMToolCallingTests:
 
         print(f"   ✅ Tool call signed: {tool_call['signature'] is not None}")
         print(f"   🔐 Signature: {tool_call['signature']}")
-        print("   📝 Note: Using demo mode with verify_response=False")
+        print("   📝 Full verification enabled")
 
         self.agents.append(agent)
         return True

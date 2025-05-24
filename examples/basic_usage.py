@@ -6,23 +6,7 @@ import sys
 import time
 from typing import Any, Dict
 
-# Force unbuffered output for CI debugging
-(
-    sys.stdout.reconfigure(line_buffering=True)
-    if hasattr(sys.stdout, "reconfigure")
-    else None
-)
-(
-    sys.stderr.reconfigure(line_buffering=True)
-    if hasattr(sys.stderr, "reconfigure")
-    else None
-)
-
-print("🔧 [CI DEBUG] basic_usage.py started, about to import TrustChain", flush=True)
-
 from trustchain import SignatureAlgorithm, TrustedTool, TrustLevel
-
-print("🔧 [CI DEBUG] TrustChain imported successfully", flush=True)
 
 
 # Example 1: Simple trusted tool
