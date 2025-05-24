@@ -105,6 +105,10 @@ class BaseTrustedTool(ABC):
             signer = self.signature_engine.create_signer(self.tool_id, self.algorithm)
             return self.tool_id
         except Exception as e:
+            # Print critical error for CI debugging
+            print(f"🚨 [CRITICAL] Failed to create signer for {self.tool_id}: {e}")
+            print(f"🚨 [CRITICAL] Available signers: {list(self.signature_engine._signers.keys())}")
+            print(f"🚨 [CRITICAL] Available verifiers: {list(self.signature_engine._verifiers.keys())}")
             raise ToolExecutionError(
                 self.tool_id, f"No signers available and failed to create one: {e}"
             )
