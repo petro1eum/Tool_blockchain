@@ -21,12 +21,7 @@ Requires: OPENAI_API_KEY and/or ANTHROPIC_API_KEY environment variables
 import asyncio
 import json
 import os
-import platform
 from typing import Any, Dict, List, Optional
-
-# Windows compatibility fix
-if platform.system() == "Windows":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 import pytest
 

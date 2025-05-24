@@ -8,6 +8,13 @@ Author: Ed Cherednik (edcherednik@gmail.com)
 Telegram: @EdCher
 """
 
+# Windows compatibility fix - must be before any asyncio imports
+import asyncio
+import platform
+
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 print("🔧 [IMPORT DEBUG] TrustChain __init__.py starting to load", flush=True)
 
 __version__ = "0.1.0"
