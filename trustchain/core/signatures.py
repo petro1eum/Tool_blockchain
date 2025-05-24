@@ -220,36 +220,184 @@ class InMemoryVerifier(Verifier):
 
 
 class TrustRegistryVerifier(Verifier):
-    """Verifier that uses a trust registry to get public keys - SIMPLIFIED VERSION."""
+    """Verifier that uses a trust registry to get public keys."""
 
     def __init__(self, trust_registry, verifier_id: str):
         self.trust_registry = trust_registry
         self.verifier_id = verifier_id
         self._verification_cache: Dict[str, VerificationResult] = {}
         self.cache_ttl = 3600  # 1 hour
+        self._cache_timestamps: Dict[str, float] = {}
 
     def verify(
         self, data: Dict[str, Any], signature: SignatureInfo
     ) -> VerificationResult:
-        """Verify signature using trust registry - SIMPLIFIED VERSION."""
+        """Verify signature using trust registry."""
         start_time = time.time()
+        request_id = data.get("request_id", "unknown")
+        tool_id = data.get("tool_id", "unknown")
 
-        # For now, just return success to test the basic flow
-        # TODO: Implement proper async registry handling
-        return VerificationResult.success(
-            request_id=data.get("request_id", "unknown"),
-            tool_id=data.get("tool_id", "unknown"),
-            signature_id=signature.public_key_id,
-            verifier_id=self.verifier_id,
-            algorithm=signature.algorithm,
-            trust_level=TrustLevel.MEDIUM,
-            verification_time_ms=(time.time() - start_time) * 1000,
-        )
+        # Check cache first
+        cache_key = f"{signature.public_key_id}:{signature.signature}"
+        if cache_key in self._verification_cache:
+            cached_time = self._cache_timestamps.get(cache_key, 0)
+            if time.time() - cached_time < self.cache_ttl:
+                cached_result = self._verification_cache[cache_key]
+                # Update timing for cache hit
+                cached_result.verification_time_ms = (time.time() - start_time) * 1000
+                return cached_result
+
+        try:
+            # Get key metadata from trust registry
+            # Note: This is synchronous call, in real implementation would need async handling
+            if hasattr(self.trust_registry, 'get_key'):
+                key_metadata = self.trust_registry.get_key(signature.public_key_id)
+            else:
+                # Fallback for registry types without get_key method
+                key_metadata = None
+
+            if not key_metadata:
+                result = VerificationResult.failure(
+                    request_id=request_id,
+                    tool_id=tool_id,
+                    signature_id=signature.public_key_id,
+                    verifier_id=self.verifier_id,
+                    error_code="KEY_NOT_FOUND",
+                    error_message=f"Public key not found in trust registry: {signature.public_key_id}",
+                    algorithm=signature.algorithm,
+                )
+                self._cache_result(cache_key, result)
+                return result
+
+            # Verify the signature using the public key
+            try:
+                # Recreate canonical data and hash
+                import json
+                canonical_data = json.dumps(data, sort_keys=True, separators=(",", ":"))
+                
+                # Get expected hash
+                crypto_engine = get_crypto_engine()
+                expected_hash = crypto_engine.hash_data(canonical_data)
+
+                if expected_hash != signature.signed_hash:
+                    result = VerificationResult.failure(
+                        request_id=request_id,
+                        tool_id=tool_id,
+                        signature_id=signature.public_key_id,
+                        verifier_id=self.verifier_id,
+                        error_code="HASH_MISMATCH",
+                        error_message=f"Data hash mismatch. Expected: {expected_hash}, Got: {signature.signed_hash}",
+                        algorithm=signature.algorithm,
+                    )
+                    self._cache_result(cache_key, result)
+                    return result
+
+                # Create temporary key pair for verification
+                import base64
+                from trustchain.core.crypto import get_crypto_engine
+                
+                crypto_engine = get_crypto_engine()
+                
+                # For Ed25519, verify signature directly
+                if signature.algorithm == SignatureAlgorithm.ED25519:
+                    public_key_bytes = base64.b64decode(key_metadata.public_key)
+                    hash_bytes = signature.signed_hash.split(":", 1)[1].encode()
+                    signature_bytes = base64.b64decode(signature.signature)
+                    
+                    # Use crypto engine for verification
+                    is_valid = crypto_engine.verify_signature(
+                        public_key_bytes, hash_bytes, signature_bytes, signature.algorithm
+                    )
+                else:
+                    # Other algorithms would be handled here
+                    result = VerificationResult.failure(
+                        request_id=request_id,
+                        tool_id=tool_id,
+                        signature_id=signature.public_key_id,
+                        verifier_id=self.verifier_id,
+                        error_code="UNSUPPORTED_ALGORITHM",
+                        error_message=f"Signature algorithm not supported: {signature.algorithm}",
+                        algorithm=signature.algorithm,
+                    )
+                    self._cache_result(cache_key, result)
+                    return result
+
+                if is_valid:
+                    result = VerificationResult.success(
+                        request_id=request_id,
+                        tool_id=tool_id,
+                        signature_id=signature.public_key_id,
+                        verifier_id=self.verifier_id,
+                        algorithm=signature.algorithm,
+                        trust_level=getattr(key_metadata, 'trust_level', TrustLevel.MEDIUM),
+                        verification_time_ms=(time.time() - start_time) * 1000,
+                    )
+                else:
+                    result = VerificationResult.failure(
+                        request_id=request_id,
+                        tool_id=tool_id,
+                        signature_id=signature.public_key_id,
+                        verifier_id=self.verifier_id,
+                        error_code="INVALID_SIGNATURE",
+                        error_message="Signature verification failed",
+                        algorithm=signature.algorithm,
+                    )
+                
+                self._cache_result(cache_key, result)
+                return result
+
+            except Exception as e:
+                result = VerificationResult.failure(
+                    request_id=request_id,
+                    tool_id=tool_id,
+                    signature_id=signature.public_key_id,
+                    verifier_id=self.verifier_id,
+                    error_code="VERIFICATION_ERROR",
+                    error_message=f"Verification error: {str(e)}",
+                    algorithm=signature.algorithm,
+                )
+                self._cache_result(cache_key, result)
+                return result
+
+        except Exception as e:
+            result = VerificationResult.failure(
+                request_id=request_id,
+                tool_id=tool_id,
+                signature_id=signature.public_key_id,
+                verifier_id=self.verifier_id,
+                error_code="REGISTRY_ERROR",
+                error_message=f"Trust registry error: {str(e)}",
+                algorithm=signature.algorithm,
+            )
+            return result
+
+    def _cache_result(self, cache_key: str, result: VerificationResult) -> None:
+        """Cache verification result."""
+        self._verification_cache[cache_key] = result
+        self._cache_timestamps[cache_key] = time.time()
+        
+        # Clean old cache entries
+        current_time = time.time()
+        expired_keys = [
+            key for key, timestamp in self._cache_timestamps.items()
+            if current_time - timestamp > self.cache_ttl
+        ]
+        for key in expired_keys:
+            self._verification_cache.pop(key, None)
+            self._cache_timestamps.pop(key, None)
 
     def can_verify(self, signature: SignatureInfo) -> bool:
-        """Check if this verifier can verify the signature - SIMPLIFIED."""
-        # For now, assume we can verify any signature
-        return True
+        """Check if this verifier can verify the signature."""
+        try:
+            # Check if we have the key in the registry
+            if hasattr(self.trust_registry, 'get_key'):
+                key_metadata = self.trust_registry.get_key(signature.public_key_id)
+                return key_metadata is not None
+            else:
+                # If registry doesn't have get_key method, assume we can try
+                return True
+        except Exception:
+            return False
 
 
 class MultiSigner(Signer):

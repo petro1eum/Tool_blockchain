@@ -99,6 +99,22 @@ except ImportError:
     wrap_agent_with_enforcement = None
     UnauthorizedToolExecution = None
 
+# Automatic tool call interception
+try:
+    from trustchain.monitoring.tool_enforcement_interceptor import (
+        ToolCallInterceptor,
+        UnauthorizedDirectToolCall,
+        enable_automatic_enforcement,
+        disable_automatic_enforcement,
+        EnforcementContext,
+    )
+except ImportError:
+    ToolCallInterceptor = None
+    UnauthorizedDirectToolCall = None
+    enable_automatic_enforcement = None
+    disable_automatic_enforcement = None
+    EnforcementContext = None
+
 # Optional imports (fail gracefully if dependencies not installed)
 try:
     from trustchain.registry.redis import RedisRegistry
@@ -174,6 +190,12 @@ __all__ = [
     "create_tool_enforcer",
     "wrap_agent_with_enforcement",
     "UnauthorizedToolExecution",
+    # Automatic Tool Call Interception
+    "ToolCallInterceptor",
+    "UnauthorizedDirectToolCall",
+    "enable_automatic_enforcement",
+    "disable_automatic_enforcement",
+    "EnforcementContext",
 ]
 
 # Version info

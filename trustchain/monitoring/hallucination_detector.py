@@ -60,19 +60,56 @@ class ValidationResult:
 
 
 class ClaimExtractor:
-    """Extracts factual claims from LLM responses."""
+    """Extracts factual claims from LLM responses using advanced pattern matching."""
 
-    # Patterns that typically indicate tool results
+    # Core patterns that indicate tool results (harder to bypass)
     TOOL_RESULT_PATTERNS = [
-        r"(?:I\s+(?:checked|retrieved|got|fetched|called|used))\s+(.+?):\s*(.+)",
-        r"(?:According\s+to|Based\s+on|From)\s+(\w+)(?:\s+tool)?[,:]?\s*(.+)",
-        r"(?:The|My)\s+(\w+)\s+(?:tool|API|service|function)\s+(?:returned|shows|indicates)[:\s]*(.+)",
-        r"(?:Weather|Temperature|Price|Data|Result|Status)(?:\s+in\s+\w+)?[:\s]*(.+)",
-        r"(\w+_tool|\w+_api|\w+API)\s+(?:returned|gave|showed)[:\s]*(.+)",
+        # Direct tool references
+        r"(?:I\s+(?:checked|retrieved|got|fetched|called|used|executed|queried))\s+(.+?)(?:\s+(?:and|to|for))?\s*[:\-]?\s*(.+)",
+        r"(?:According\s+to|Based\s+on|From|Using)\s+(?:the\s+)?(\w+)(?:\s+(?:tool|API|service|function|system))?[,:\-]?\s*(.+)",
+        r"(?:The|My)\s+(\w+)\s+(?:tool|API|service|function|system|database)\s+(?:returned|shows|indicates|reports|confirms|says)[:\-\s]*(.+)",
+        
+        # Data presentation patterns (harder to avoid)
+        r"(?:Current|Latest|Real-time|Updated)\s+(\w+)(?:\s+(?:data|information|status|price|temperature|value))?[:\s]*(.+)",
+        r"(?:Live|Fresh|New)\s+(?:data|information|results)\s+(?:from|shows?|indicates?)[:\s]*(.+)",
+        
+        # API-specific patterns
+        r"(\w+_?(?:api|API|tool|service))\s+(?:returned|gave|showed|provided|reports?)[:\s]*(.+)",
+        r"(?:API|Tool|Service|System)\s+(?:call|query|request)\s+(?:returned|gave|showed)[:\s]*(.+)",
+        
+        # Structured data patterns
+        r"(?:Data|Results?|Information|Response)(?:\s+from\s+\w+)?[:\s]*\{.+?\}",  # JSON-like
+        r"(?:Status|State|Value|Price|Temperature|Count|Amount)[:\s]*[\d\$€£¥]+",  # Specific values
+        
+        # Time-based claims (often hallucinated)
+        r"(?:As\s+of|Currently|Right\s+now|At\s+this\s+moment|Today)[:\s,]*(.+)",
+        
+        # Verification bypass attempts
+        r"(?:The\s+(?:data|information|results?)\s+(?:shows?|indicates?|confirms?|suggests?))[:\s]*(.+)",
+        r"(?:Analysis|Research|Investigation)\s+(?:shows?|reveals?|indicates?)[:\s]*(.+)",
+        r"(?:Sources?|Reports?|Studies?)\s+(?:indicate|show|confirm|suggest)[:\s]*(.+)",
+    ]
+
+    # Semantic patterns that indicate claims (not just syntax)
+    SEMANTIC_CLAIM_INDICATORS = [
+        # Definitive statements about external data
+        "temperature", "price", "cost", "value", "amount", "count", "number",
+        "status", "state", "condition", "level", "rate", "percentage",
+        "balance", "total", "sum", "average", "maximum", "minimum",
+        "current", "latest", "updated", "recent", "new", "fresh",
+        
+        # Time-specific claims
+        "today", "yesterday", "now", "currently", "presently", "at the moment",
+        "this week", "this month", "this year", "recently", "lately",
+        
+        # Certainty indicators (often used in hallucinations)
+        "exactly", "precisely", "specifically", "definitely", "certainly",
+        "confirmed", "verified", "validated", "authenticated",
     ]
 
     def __init__(self):
-        self.patterns = [re.compile(pattern, re.IGNORECASE) for pattern in self.TOOL_RESULT_PATTERNS]
+        self.patterns = [re.compile(pattern, re.IGNORECASE | re.DOTALL) for pattern in self.TOOL_RESULT_PATTERNS]
+        self.semantic_indicators = [word.lower() for word in self.SEMANTIC_CLAIM_INDICATORS]
 
     def extract_claims(self, text: str) -> List[HallucinatedClaim]:
         """Extract factual claims from text that could be tool results."""
@@ -84,6 +121,7 @@ class ClaimExtractor:
             if not line:
                 continue
 
+            # Check for pattern-based claims
             for pattern in self.patterns:
                 matches = pattern.finditer(line)
                 for match in matches:
@@ -96,15 +134,132 @@ class ClaimExtractor:
                     elif len(match.groups()) >= 1:
                         claimed_result = match.group(1)
 
+                    # Calculate confidence based on pattern strength
+                    confidence = self._calculate_pattern_confidence(line, match, pattern)
+
                     claims.append(HallucinatedClaim(
                         claim_text=line,
                         tool_name=tool_name,
                         claimed_result=claimed_result,
-                        context=f"Line {line_num + 1}",
-                        confidence=0.5  # Uncertain by default
+                        context=f"Line {line_num + 1} (pattern match)",
+                        confidence=confidence
                     ))
 
+            # Check for semantic-based claims (even if no pattern matches)
+            semantic_claims = self._extract_semantic_claims(line, line_num)
+            claims.extend(semantic_claims)
+
+        # Remove duplicates (same claim_text)
+        seen_claims = set()
+        unique_claims = []
+        for claim in claims:
+            if claim.claim_text not in seen_claims:
+                seen_claims.add(claim.claim_text)
+                unique_claims.append(claim)
+
+        return unique_claims
+    
+    def _calculate_pattern_confidence(self, line: str, match: re.Match, pattern: re.Pattern) -> float:
+        """Calculate confidence score for a pattern-based claim."""
+        confidence = 0.3  # Base confidence for pattern match
+        
+        line_lower = line.lower()
+        
+        # Higher confidence for explicit tool references
+        if any(keyword in line_lower for keyword in ['api', 'tool', 'service', 'database']):
+            confidence += 0.3
+        
+        # Higher confidence for specific data types
+        if any(keyword in line_lower for keyword in ['temperature', 'price', 'balance', 'status']):
+            confidence += 0.2
+        
+        # Higher confidence for numbers/specific values
+        if re.search(r'\d+(?:\.\d+)?', line):
+            confidence += 0.2
+        
+        # Higher confidence for time references
+        if any(keyword in line_lower for keyword in ['now', 'current', 'today', 'latest']):
+            confidence += 0.1
+        
+        return min(confidence, 1.0)
+    
+    def _extract_semantic_claims(self, line: str, line_num: int) -> List[HallucinatedClaim]:
+        """Extract claims based on semantic content analysis."""
+        claims = []
+        line_lower = line.lower()
+        
+        # Count semantic indicators
+        indicator_count = sum(1 for indicator in self.semantic_indicators if indicator in line_lower)
+        
+        # If line has multiple semantic indicators, it's likely a factual claim
+        if indicator_count >= 2:
+            # Check if line makes definitive statements
+            definitive_patterns = [
+                r'\bis\s+[\d\$€£¥]+',  # "is $100", "is 25°C"
+                r'\bwas\s+[\d\$€£¥]+',  # "was $100"
+                r'\bshows?\s+[\d\$€£¥]+',  # "shows $100"
+                r'\bequals?\s+[\d\$€£¥]+',  # "equals $100"
+                r'\btotal(?:s|ed|ing)?\s+[\d\$€£¥]+',  # "total $100"
+                r'\bcost(?:s)?\s+[\d\$€£¥]+',  # "costs $100"
+                r'\bprice(?:d)?\s+at\s+[\d\$€£¥]+',  # "priced at $100"
+            ]
+            
+            for pattern in definitive_patterns:
+                if re.search(pattern, line_lower):
+                    # Calculate confidence based on semantic strength
+                    confidence = min(0.4 + (indicator_count * 0.1), 0.9)
+                    
+                    claims.append(HallucinatedClaim(
+                        claim_text=line,
+                        tool_name=self._extract_implied_tool(line),
+                        claimed_result=self._extract_claimed_value(line),
+                        context=f"Line {line_num + 1} (semantic analysis)",
+                        confidence=confidence
+                    ))
+                    break
+        
         return claims
+    
+    def _extract_implied_tool(self, line: str) -> Optional[str]:
+        """Try to extract implied tool name from context."""
+        line_lower = line.lower()
+        
+        # Common tool domain mappings
+        tool_mappings = {
+            'weather': ['temperature', 'humidity', 'rain', 'snow', 'wind', 'forecast'],
+            'stock': ['price', 'trading', 'market', 'shares', 'stocks', 'ticker'],
+            'finance': ['balance', 'account', 'payment', 'transaction', 'money'],
+            'database': ['record', 'entry', 'data', 'query', 'search'],
+            'api': ['endpoint', 'response', 'request', 'service', 'call'],
+        }
+        
+        for tool_type, keywords in tool_mappings.items():
+            if any(keyword in line_lower for keyword in keywords):
+                return f"{tool_type}_api"
+        
+        return None
+    
+    def _extract_claimed_value(self, line: str) -> str:
+        """Extract the specific value being claimed."""
+        # Look for numbers, currency, percentages
+        value_patterns = [
+            r'[\d,]+\.?\d*\s*[%°CF$€£¥]',  # Numbers with units
+            r'\$[\d,]+\.?\d*',  # Currency
+            r'[\d,]+\.?\d*\s*(?:percent|%)',  # Percentages
+            r'[\d,]+\.?\d*',  # Plain numbers
+        ]
+        
+        for pattern in value_patterns:
+            match = re.search(pattern, line)
+            if match:
+                return match.group()
+        
+        # Fallback to last part of sentence
+        words = line.split()
+        if len(words) > 3:
+            return ' '.join(words[-3:])
+        
+        return line
 
     def extract_structured_claims(self, text: str) -> List[Dict[str, Any]]:
         """Extract structured data claims (JSON, key-value pairs)."""
