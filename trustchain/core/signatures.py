@@ -142,7 +142,7 @@ class InMemoryVerifier(Verifier):
                                 signature_id=signature.public_key_id,
                                 verifier_id=self.verifier_id,
                                 error_code="HASH_MISMATCH",
-                                error_message="Data hash does not match signed hash",
+                                error_message=f"Data hash does not match signed hash. Expected: {expected_hash}, Got: {signature.signed_hash}",
                                 algorithm=signature.algorithm,
                             )
 
@@ -340,11 +340,14 @@ class SignatureEngine:
 
         signer = self._signers[signer_id]
 
+        # Create timestamp to ensure consistency between signing and verification
+        timestamp = int(time.time() * 1000)
+
         # Create response data
         response_data = {
             "request_id": request_id,
             "tool_id": tool_id,
-            "timestamp": int(time.time() * 1000),
+            "timestamp": timestamp,
             "data": data,
             "execution_time_ms": execution_time_ms,
             "version": "1.0",
@@ -353,10 +356,11 @@ class SignatureEngine:
         # Sign the response
         signature = signer.sign(response_data)
 
-        # Create signed response
+        # Create signed response with the SAME timestamp that was signed
         signed_response = SignedResponse(
             request_id=request_id,
             tool_id=tool_id,
+            timestamp=timestamp,  # Use the same timestamp that was signed!
             data=data,
             signature=signature,
             execution_time_ms=execution_time_ms,

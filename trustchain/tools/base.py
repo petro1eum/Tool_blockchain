@@ -73,23 +73,15 @@ class BaseTrustedTool(ABC):
 
     @property
     def signature_engine(self) -> SignatureEngine:
-        """Get the signature engine - prefer global engine WITH registry."""
-        # Check if global engine has registry - if so, use it
+        """Get the signature engine - prefer global engine."""
+        # Always use global engine - it has InMemoryVerifier for standalone operation
         global_engine = get_signature_engine()
-        if global_engine is not None and global_engine.trust_registry is not None:
-            return global_engine
-
-        # If we have initial engine, use it
+        
+        # If we have initial engine preference, use it instead
         if self._initial_signature_engine is not None:
             return self._initial_signature_engine
-
-        # Create new engine WITH registry and set as global
-        from trustchain.core.signatures import SignatureEngine, set_signature_engine
-
-        engine = SignatureEngine(self.registry)
-        set_signature_engine(engine)
-        self._initial_signature_engine = engine
-        return engine
+            
+        return global_engine
 
     def _find_available_signer(self) -> str:
         """Find an available signer ID for this tool."""
