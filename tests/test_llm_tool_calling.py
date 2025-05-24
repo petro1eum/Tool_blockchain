@@ -176,7 +176,7 @@ class AIAgent:
 # ==================== TRUSTED TOOLS (SIGNED) ====================
 
 
-@TrustedTool("weather_api", trust_level=TrustLevel.MEDIUM)
+@TrustedTool("weather_api", trust_level=TrustLevel.MEDIUM, require_nonce=False)
 async def weather_tool(location: str) -> Dict[str, Any]:
     """Get weather data - signed for authenticity."""
     await asyncio.sleep(0.05)  # Simulate API call
@@ -191,7 +191,7 @@ async def weather_tool(location: str) -> Dict[str, Any]:
     }
 
 
-@TrustedTool("payment_system", trust_level=TrustLevel.CRITICAL)
+@TrustedTool("payment_system", trust_level=TrustLevel.CRITICAL, require_nonce=False)
 async def payment_processor(
     amount: float, currency: str, recipient: str
 ) -> Dict[str, Any]:
@@ -210,7 +210,7 @@ async def payment_processor(
     }
 
 
-@TrustedTool("calculator", trust_level=TrustLevel.LOW)
+@TrustedTool("calculator", trust_level=TrustLevel.LOW, require_nonce=False)
 async def calculator_tool(expression: str) -> Dict[str, Any]:
     """Calculate expression - signed for audit trail."""
     await asyncio.sleep(0.02)  # Simulate calculation
@@ -229,7 +229,7 @@ async def calculator_tool(expression: str) -> Dict[str, Any]:
     }
 
 
-@TrustedTool("data_analytics", trust_level=TrustLevel.HIGH)
+@TrustedTool("data_analytics", trust_level=TrustLevel.HIGH, require_nonce=False)
 async def analytics_tool(data: List[float]) -> Dict[str, Any]:
     """Analyze data - signed for data integrity."""
     await asyncio.sleep(0.08)  # Simulate analysis
