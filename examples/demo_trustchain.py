@@ -145,7 +145,7 @@ async def main():
         payment_response = await process_payment(
             1250.00, "account_123", "account_456", verify_response=False
         )
-        print(f"   💰 Payment processed:")
+        print("   💰 Payment processed:")
         print(f"       Transaction ID: {payment_response.data['transaction_id']}")
         print(f"       Amount: ${payment_response.data['amount']:.2f}")
         print(f"       Fee: ${payment_response.data['fee']:.2f}")
@@ -162,7 +162,7 @@ async def main():
             f"   🧮 Calculation: {calc_response.data['operands'][0]} × {calc_response.data['operands'][1]} = {calc_response.data['result']:.2f}"
         )
         print(f"   🔐 Tool ID: {calc_response.tool_id}")
-        print(f"   ⚡ No nonce required (fast mode)")
+        print("   ⚡ No nonce required (fast mode)")
         print()
 
         # === Demo 4: Data Processing ===
@@ -171,7 +171,7 @@ async def main():
 
         sample_data = [23, 45, 12, 67, 34, 89, 56, 78, 45, 23]
         data_response = await process_data(sample_data, "stats", verify_response=False)
-        print(f"   📊 Data Analysis Results:")
+        print("   📊 Data Analysis Results:")
         print(f"       Count: {data_response.data['count']}")
         print(f"       Average: {data_response.data['average']:.2f}")
         print(
@@ -203,7 +203,7 @@ async def main():
             task = calculate("add", i, i * 2, verify_response=False)
             tasks.append(task)
 
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         end_time = time.time()
 
         print(
@@ -219,11 +219,11 @@ async def main():
         calc_stats = await calculate.get_statistics()
         weather_stats = await get_weather.get_statistics()
 
-        print(f"   🧮 Calculator:")
+        print("   🧮 Calculator:")
         print(f"       Total calls: {calc_stats['stats']['total_calls']}")
         print(f"       Success rate: {calc_stats['success_rate']:.2%}")
 
-        print(f"   🌤️  Weather Service:")
+        print("   🌤️  Weather Service:")
         print(f"       Total calls: {weather_stats['stats']['total_calls']}")
         print(f"       Avg execution: {weather_stats['avg_execution_time_ms']:.2f}ms")
         print()
@@ -241,7 +241,7 @@ async def main():
         print(f"   🔐 Signature 1: {sig1}...")
         print(f"   🔐 Signature 2: {sig2}...")
         print(f"   ✅ Signatures different: {sig1 != sig2}")
-        print(f"       (Same data, different timestamps)")
+        print("       (Same data, different timestamps)")
         print()
 
         # === Demo 9: JSON Export ===
@@ -257,7 +257,7 @@ async def main():
             "trust_level": weather_response.trust_metadata.trust_level.value,
         }
 
-        print(f"   📄 Exported Response Data:")
+        print("   📄 Exported Response Data:")
         print(json.dumps(export_data, indent=6))
         print()
 

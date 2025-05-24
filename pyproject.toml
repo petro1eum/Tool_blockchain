@@ -156,6 +156,8 @@ exclude_lines = [
 [tool.ruff]
 target-version = "py38"
 line-length = 88
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -169,8 +171,13 @@ ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "B904",  # raise without from in except (too many to fix now)
+    "F403", # star imports (used intentionally for library exports)
+    "F405", # names from star imports (consequence of F403)
+    "E402", # imports not at top (needed for debug prints)
 ]
 
-[tool.ruff.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/**/*" = ["F401", "F811"] 
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403", "F405", "E402"]
+"tests/**/*" = ["F401", "F811", "E722", "E712"] 
+"examples/**/*" = ["F821", "E722", "E402"] 

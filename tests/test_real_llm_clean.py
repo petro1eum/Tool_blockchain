@@ -108,10 +108,10 @@ class OpenAIClient:
             # Simple prompt that might trigger tool usage
             system_prompt = """You are a helpful assistant. You have access to these tools:
 - get_weather(location, units): Get weather information
-- calculate(expression): Perform mathematical calculations  
+- calculate(expression): Perform mathematical calculations
 - send_email(recipient, subject, message): Send emails
 
-If the user asks about weather, calculations, or sending emails, 
+If the user asks about weather, calculations, or sending emails,
 you should use the appropriate tool and then explain the results."""
 
             response = self.client.chat.completions.create(

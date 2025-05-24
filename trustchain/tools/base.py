@@ -1,16 +1,13 @@
 """Base classes for trusted tools in TrustChain."""
 
 import asyncio
-import functools
-import inspect
 import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
-from trustchain.core.models import RequestContext as RequestContextModel
 from trustchain.core.models import SignatureAlgorithm, SignedResponse, TrustLevel
-from trustchain.core.nonce import generate_request_nonce, get_nonce_manager
+from trustchain.core.nonce import generate_request_nonce
 from trustchain.core.signatures import SignatureEngine, get_signature_engine
 from trustchain.registry.base import TrustRegistry
 from trustchain.registry.memory import MemoryRegistry
@@ -118,7 +115,7 @@ class BaseTrustedTool(ABC):
 
         # 4. No signers available - create one
         try:
-            signer = self.signature_engine.create_signer(self.tool_id, self.algorithm)
+            self.signature_engine.create_signer(self.tool_id, self.algorithm)
             return self.tool_id
         except Exception as e:
             # Print critical error for CI debugging
@@ -276,7 +273,7 @@ class BaseTrustedTool(ABC):
                     error_msg = verification_result.error_message
                     if "No verifier available" in error_msg:
                         print(
-                            f"🚨 [CI FALLBACK] Using CI fallback - setting response as verified",
+                            "🚨 [CI FALLBACK] Using CI fallback - setting response as verified",
                             file=sys.stderr,
                         )
                         signed_response.trust_metadata.verified = True

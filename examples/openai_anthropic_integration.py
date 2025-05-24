@@ -21,7 +21,7 @@ Usage:
 import asyncio
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # TrustChain imports
 from trustchain import TrustedTool, TrustLevel
@@ -227,11 +227,11 @@ async def demo_openai_integration():
 
                 # Verify TrustChain signature
                 if result.is_verified:
-                    print(f"   ✅ VERIFIED: Function executed authentically")
+                    print("   ✅ VERIFIED: Function executed authentically")
                     print(f"   📊 Data: {result.data}")
                     print(f"   🔐 Signature: {result.signature.signature[:20]}...")
                 else:
-                    print(f"   ❌ VERIFICATION FAILED: Potential hallucination!")
+                    print("   ❌ VERIFICATION FAILED: Potential hallucination!")
 
         else:
             print("ℹ️ No tool calls in response")
@@ -327,11 +327,11 @@ async def demo_anthropic_integration():
 
                 # Verify TrustChain signature
                 if result.is_verified:
-                    print(f"   ✅ VERIFIED: Function executed authentically")
+                    print("   ✅ VERIFIED: Function executed authentically")
                     print(f"   📊 Data: {result.data}")
                     print(f"   🔐 Signature: {result.signature.signature[:20]}...")
                 else:
-                    print(f"   ❌ VERIFICATION FAILED: Potential hallucination!")
+                    print("   ❌ VERIFICATION FAILED: Potential hallucination!")
 
         if not tool_calls_found:
             print("ℹ️ No tool calls in response")

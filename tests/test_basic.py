@@ -304,9 +304,7 @@ class TestSignatureVerification:
         set_signature_engine(signature_engine)
 
         # Create signer
-        signer = signature_engine.create_signer(
-            "test_signer", SignatureAlgorithm.ED25519
-        )
+        signature_engine.create_signer("test_signer", SignatureAlgorithm.ED25519)
 
         # Sign a response
         signed_response = signature_engine.sign_response(

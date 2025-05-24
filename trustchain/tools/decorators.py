@@ -1,7 +1,7 @@
 """Decorators for creating trusted tools in TrustChain."""
 
 import functools
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional
 
 from trustchain.core.models import SignatureAlgorithm, TrustLevel
 from trustchain.core.signatures import SignatureEngine

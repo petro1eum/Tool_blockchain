@@ -12,11 +12,9 @@ Run: python examples/hallucination_detection_demo.py
 """
 
 import asyncio
-import hashlib
-import json
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 # TrustChain imports
 from trustchain import MemoryRegistry, TrustedTool, TrustLevel
@@ -288,7 +286,7 @@ class HallucinationDemo:
         account_id = "acc_001"
 
         # Test 1: Real trusted response
-        print(f"\n📊 Test 1: AI using TRUSTED banking tool")
+        print("\n📊 Test 1: AI using TRUSTED banking tool")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(False)
         real_response = await self.ai_agent.get_account_info(account_id)
@@ -299,7 +297,7 @@ class HallucinationDemo:
         print(f"🔐 Cryptographic verification: {real_verification}")
 
         # Test 2: Hallucinated response
-        print(f"\n📊 Test 2: AI HALLUCINATING banking data")
+        print("\n📊 Test 2: AI HALLUCINATING banking data")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(True)
         fake_response = await self.ai_agent.get_account_info(account_id)
@@ -310,7 +308,7 @@ class HallucinationDemo:
         print(f"🚨 Cryptographic verification: {fake_verification}")
 
         # Security Analysis
-        print(f"\n🛡️ SECURITY ANALYSIS:")
+        print("\n🛡️ SECURITY ANALYSIS:")
         print(f"✅ Real response verified: {real_verification['authenticity']}")
         print(f"❌ Fake response detected: {fake_verification['authenticity']}")
 
@@ -327,7 +325,7 @@ class HallucinationDemo:
         category = "tech"
 
         # Test 1: Real trusted response
-        print(f"\n📊 Test 1: AI using TRUSTED news service")
+        print("\n📊 Test 1: AI using TRUSTED news service")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(False)
         real_response = await self.ai_agent.get_news_info(category)
@@ -338,7 +336,7 @@ class HallucinationDemo:
         print(f"🔐 Cryptographic verification: {real_verification}")
 
         # Test 2: Hallucinated response
-        print(f"\n📊 Test 2: AI HALLUCINATING news data")
+        print("\n📊 Test 2: AI HALLUCINATING news data")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(True)
         fake_response = await self.ai_agent.get_news_info(category)
@@ -351,7 +349,7 @@ class HallucinationDemo:
         print(f"🚨 Cryptographic verification: {fake_verification}")
 
         # Security Analysis
-        print(f"\n🛡️ SECURITY ANALYSIS:")
+        print("\n🛡️ SECURITY ANALYSIS:")
         print(f"✅ Real news verified: {real_verification['authenticity']}")
         print(f"❌ Fake news detected: {fake_verification['authenticity']}")
 
@@ -368,7 +366,7 @@ class HallucinationDemo:
         symbol = "AAPL"
 
         # Test 1: Real trusted response
-        print(f"\n📊 Test 1: AI using TRUSTED stock service")
+        print("\n📊 Test 1: AI using TRUSTED stock service")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(False)
         real_response = await self.ai_agent.get_stock_info(symbol)
@@ -380,7 +378,7 @@ class HallucinationDemo:
         print(f"🔐 Cryptographic verification: {real_verification}")
 
         # Test 2: Hallucinated response
-        print(f"\n📊 Test 2: AI HALLUCINATING stock data")
+        print("\n📊 Test 2: AI HALLUCINATING stock data")
         print("-" * 40)
         self.ai_agent.set_hallucination_mode(True)
         fake_response = await self.ai_agent.get_stock_info(symbol)
@@ -392,7 +390,7 @@ class HallucinationDemo:
         print(f"🚨 Cryptographic verification: {fake_verification}")
 
         # Security Analysis
-        print(f"\n🛡️ SECURITY ANALYSIS:")
+        print("\n🛡️ SECURITY ANALYSIS:")
         print(f"✅ Real data verified: {real_verification['authenticity']}")
         print(f"❌ Fake data detected: {fake_verification['authenticity']}")
 

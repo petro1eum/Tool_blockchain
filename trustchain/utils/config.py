@@ -208,7 +208,7 @@ def load_config(
             raise ConfigurationError(f"Config file not found: {config_path}")
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 file_config = yaml.safe_load(f) or {}
                 config_data.update(file_config)
         except yaml.YAMLError as e:

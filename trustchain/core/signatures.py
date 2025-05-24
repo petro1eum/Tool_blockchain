@@ -1,10 +1,9 @@
 """Signature engine for TrustChain."""
 
-import asyncio
 import base64
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from trustchain.core.crypto import KeyPair, get_crypto_engine
 from trustchain.core.models import (
@@ -98,7 +97,7 @@ class InMemoryVerifier(Verifier):
 
     def __init__(self, verifier_id: str):
         self.verifier_id = verifier_id
-        self._signature_engine: Optional["SignatureEngine"] = None
+        self._signature_engine: Optional[SignatureEngine] = None
 
     def set_signature_engine(self, engine: "SignatureEngine") -> None:
         """Set reference to the signature engine."""
@@ -123,7 +122,7 @@ class InMemoryVerifier(Verifier):
             )
 
         # Find a signer with matching public key
-        for signer_id, signer in self._signature_engine._signers.items():
+        for _signer_id, signer in self._signature_engine._signers.items():
             if isinstance(signer, KeyPairSigner):
                 if signer.key_pair.key_id == signature.public_key_id:
                     # Found matching signer, verify signature
@@ -205,7 +204,7 @@ class InMemoryVerifier(Verifier):
             return False
 
         # Check if we have a signer with matching key
-        for signer_id, signer in self._signature_engine._signers.items():
+        for _signer_id, signer in self._signature_engine._signers.items():
             if isinstance(signer, KeyPairSigner):
                 if signer.key_pair.key_id == signature.public_key_id:
                     return True
@@ -308,7 +307,7 @@ class SignatureEngine:
                 print("🚨 [DEBUG] CRITICAL: InMemoryVerifier engine reference not set!")
             else:
                 print(
-                    f"✅ [DEBUG] InMemoryVerifier properly linked to engine", flush=True
+                    "✅ [DEBUG] InMemoryVerifier properly linked to engine", flush=True
                 )
 
     def register_signer(self, signer_id: str, signer: Signer) -> None:
@@ -402,7 +401,7 @@ class SignatureEngine:
         else:
             # Find a verifier that can handle this signature
             verifier = None
-            for vid, v in self._verifiers.items():
+            for _vid, v in self._verifiers.items():
                 if v.can_verify(signed_response.signature):
                     verifier = v
                     break

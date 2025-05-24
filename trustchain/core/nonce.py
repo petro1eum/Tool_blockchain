@@ -4,8 +4,7 @@ import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 from trustchain.core.crypto import generate_nonce
 from trustchain.core.models import NonceEntry

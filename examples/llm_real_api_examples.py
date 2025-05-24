@@ -7,7 +7,7 @@ Set your API keys as environment variables to test with real providers.
 
 Environment variables needed:
 - OPENAI_API_KEY: Your OpenAI API key
-- ANTHROPIC_API_KEY: Your Anthropic API key  
+- ANTHROPIC_API_KEY: Your Anthropic API key
 - GEMINI_API_KEY: Your Google Gemini API key
 
 Run with: python examples/llm_real_api_examples.py
@@ -16,7 +16,7 @@ Run with: python examples/llm_real_api_examples.py
 import asyncio
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from trustchain import TrustedTool, TrustLevel
 
@@ -222,13 +222,13 @@ async def financial_advisor_consensus(
 
     financial_prompt = f"""
     Financial Query: {query}
-    
+
     Portfolio Data:
     - Current Value: ${portfolio_data.get('value', 0):,}
     - Risk Tolerance: {portfolio_data.get('risk_tolerance', 'medium')}
     - Investment Horizon: {portfolio_data.get('horizon', '5 years')}
     - Age: {portfolio_data.get('age', 'not specified')}
-    
+
     Please provide conservative financial advice focusing on risk management.
     Include specific recommendations and reasoning.
     """

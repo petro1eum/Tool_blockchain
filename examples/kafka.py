@@ -3,22 +3,20 @@ import hashlib
 import json
 import time
 import uuid
-from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import nacl.encoding
 import nacl.signing
 import rocksdb
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.structs import ConsumerRecord
-from confluent_kafka import DeserializingConsumer, SerializingProducer
+from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
-from confluent_kafka.serialization import StringDeserializer, StringSerializer
+from confluent_kafka.schema_registry.avro import AvroSerializer
+from confluent_kafka.serialization import StringSerializer
 from kafka import KafkaAdminClient, KafkaConsumer, KafkaProducer
-from kafka.admin import ConfigResource, ConfigResourceType, NewTopic
-from kafka.errors import KafkaError
+from kafka.admin import NewTopic
 
 # === АРХИТЕКТУРА ТОПИКОВ ===
 

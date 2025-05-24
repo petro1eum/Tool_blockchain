@@ -348,7 +348,7 @@ class MemoryRegistry(TrustRegistry):
             try:
                 key = KeyMetadata(**key_dict)
                 keys.append(key)
-            except Exception as e:
+            except Exception:
                 # Skip invalid key data
                 continue
 

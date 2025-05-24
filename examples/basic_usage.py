@@ -20,7 +20,7 @@ from typing import Any, Dict
 
 print("🔧 [CI DEBUG] basic_usage.py started, about to import TrustChain", flush=True)
 
-from trustchain import MemoryRegistry, SignatureAlgorithm, TrustedTool, TrustLevel
+from trustchain import SignatureAlgorithm, TrustedTool, TrustLevel
 
 print("🔧 [CI DEBUG] TrustChain imported successfully", flush=True)
 

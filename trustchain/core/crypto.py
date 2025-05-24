@@ -4,7 +4,7 @@ import base64
 import hashlib
 import secrets
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 import nacl.encoding
 import nacl.signing
@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.serialization import (
     PublicFormat,
 )
 
-from trustchain.core.models import SignatureAlgorithm, SignatureFormat
+from trustchain.core.models import SignatureAlgorithm
 from trustchain.utils.exceptions import CryptoError
 
 

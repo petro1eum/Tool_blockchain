@@ -3,7 +3,6 @@
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -17,17 +16,11 @@ from rich.table import Table
 from trustchain import (
     MemoryRegistry,
     SignatureAlgorithm,
-    TrustLevel,
     check_dependencies,
     get_version,
 )
 from trustchain.core.crypto import get_crypto_engine
 from trustchain.core.models import KeyMetadata
-from trustchain.core.signatures import (
-    SignatureEngine,
-    get_signature_engine,
-    set_signature_engine,
-)
 from trustchain.utils.config import create_config_template, load_config, save_config
 
 app = typer.Typer(
@@ -173,7 +166,7 @@ def keygen(
                 await registry.register_key(key_metadata)
 
             asyncio.run(register_key_async())
-            console.print(f"[green]✅ Key registered in trust registry[/green]")
+            console.print("[green]✅ Key registered in trust registry[/green]")
 
         # Show key information
         table = Table(title="Generated Key Information")

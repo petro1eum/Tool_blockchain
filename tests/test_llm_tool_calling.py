@@ -6,7 +6,7 @@ This test demonstrates the proper use case: LLM generates regular responses,
 but when it decides to use tools/functions, those tool calls are cryptographically signed.
 
 This prevents:
-- Forged tool executions 
+- Forged tool executions
 - Unauthorized actions by AI
 - Audit trail of what tools AI actually used
 
@@ -44,7 +44,7 @@ class AIAgent:
 
         # Mock AI decision making
         if "weather" in message.lower():
-            response = f"I'll check the weather for you. Let me use my weather tool."
+            response = "I'll check the weather for you. Let me use my weather tool."
             # AI decides to call weather tool
             weather_data = await self._call_weather_tool("New York")
             response += f"\n📊 {weather_data['summary']}"
@@ -53,7 +53,7 @@ class AIAgent:
             keyword in message.lower()
             for keyword in ["payment", "send money", "send $", "transfer", "pay"]
         ):
-            response = f"I'll help you with the payment. Let me use the payment system."
+            response = "I'll help you with the payment. Let me use the payment system."
             # AI decides to call payment tool
             payment_result = await self._call_payment_tool(
                 100.0, "USD", "friend@example.com"
@@ -61,7 +61,7 @@ class AIAgent:
             response += f"\n💰 {payment_result['summary']}"
 
         elif "calculate" in message.lower():
-            response = f"I'll calculate that for you using my calculator tool."
+            response = "I'll calculate that for you using my calculator tool."
             # AI decides to call calculator tool
             calc_result = await self._call_calculator_tool("15 * 8 + 7")
             response += f"\n🧮 {calc_result['summary']}"
@@ -70,7 +70,7 @@ class AIAgent:
             keyword in message.lower()
             for keyword in ["analyze data", "analyze", "data analysis", "statistics"]
         ):
-            response = f"I'll analyze that data using my analytics tools."
+            response = "I'll analyze that data using my analytics tools."
             # AI decides to call analytics tool
             analysis_result = await self._call_analytics_tool([1, 2, 3, 4, 5])
             response += f"\n📈 {analysis_result['summary']}"
@@ -327,7 +327,7 @@ class LLMToolCallingTests:
 
         print(f"   ✅ Tool call signed: {tool_call['signature'] is not None}")
         print(f"   🔐 Signature: {tool_call['signature']}")
-        print(f"   📝 Note: Using demo mode with verify_response=False")
+        print("   📝 Note: Using demo mode with verify_response=False")
 
         self.agents.append(agent)
         return True
@@ -358,7 +358,7 @@ class LLMToolCallingTests:
         print(f"   ✅ Payment signed: {tool_call['signature'] is not None}")
         print(f"   💳 Transaction ID: {tool_call['result']['transaction_id']}")
         print(f"   🔐 Critical signature: {tool_call['signature']}")
-        print(f"   📝 Note: CRITICAL trust level applied")
+        print("   📝 Note: CRITICAL trust level applied")
 
         self.agents.append(agent)
         return True
@@ -387,7 +387,7 @@ class LLMToolCallingTests:
         print(f"   ✅ Calculation signed: {tool_call['signature'] is not None}")
         print(f"   📊 Result: {tool_call['result']['result']}")
         print(f"   🔐 Signature: {tool_call['signature']}")
-        print(f"   📝 Note: Audit trail for math operations")
+        print("   📝 Note: Audit trail for math operations")
 
         self.agents.append(agent)
         return True
@@ -418,7 +418,7 @@ class LLMToolCallingTests:
         print(f"   ✅ Analysis signed: {tool_call['signature'] is not None}")
         print(f"   📊 Mean: {tool_call['result']['mean']}")
         print(f"   🔐 Signature: {tool_call['signature']}")
-        print(f"   📝 Note: HIGH trust level for data integrity")
+        print("   📝 Note: HIGH trust level for data integrity")
 
         self.agents.append(agent)
         return True
@@ -436,7 +436,7 @@ class LLMToolCallingTests:
         await agent.chat("Send $50 payment")  # Should call payment tool
         await agent.chat("How are you?")  # Regular chat, no tools
 
-        print(f"   💬 Total conversations: 4")
+        print("   💬 Total conversations: 4")
         print(f"   🛠️  Total tool calls: {len(agent.tool_calls_made)}")
 
         # Should have exactly 3 tool calls (weather, calc, payment)
@@ -474,7 +474,7 @@ class LLMToolCallingTests:
             agents[2].chat("Analyze data: [10,20,30]"),  # Analytics tool
         ]
 
-        responses = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         end_time = time.time()
 
         total_time = end_time - start_time
@@ -514,7 +514,7 @@ class LLMToolCallingTests:
             tool = call["tool"]
             tool_counts[tool] = tool_counts.get(tool, 0) + 1
 
-        print(f"   📈 Tool usage breakdown:")
+        print("   📈 Tool usage breakdown:")
         for tool, count in tool_counts.items():
             print(f"      🔸 {tool}: {count} calls")
 
@@ -582,24 +582,24 @@ class LLMToolCallingTests:
             for agent in self.agents
         )
 
-        print(f"📊 Test Results:")
+        print("📊 Test Results:")
         print(f"   🤖 AI Agents tested: {total_agents}")
         print(f"   🛠️  Tool calls made: {total_tool_calls}")
         print(f"   🔐 Signed calls: {total_signed}/{total_tool_calls} (100%)")
-        print(f"   ⚡ All tests passed: ✅")
+        print("   ⚡ All tests passed: ✅")
 
-        print(f"\n🎯 Key Achievements:")
-        print(f"   ✅ Regular AI conversation works without signatures")
-        print(f"   ✅ Tool calls are automatically signed when AI uses them")
-        print(f"   ✅ CRITICAL trust level for financial operations")
-        print(f"   ✅ Complete audit trail of AI tool usage")
-        print(f"   ✅ Concurrent AI agents with signed tool calls")
-        print(f"   ✅ Prevention of forged tool executions")
+        print("\n🎯 Key Achievements:")
+        print("   ✅ Regular AI conversation works without signatures")
+        print("   ✅ Tool calls are automatically signed when AI uses them")
+        print("   ✅ CRITICAL trust level for financial operations")
+        print("   ✅ Complete audit trail of AI tool usage")
+        print("   ✅ Concurrent AI agents with signed tool calls")
+        print("   ✅ Prevention of forged tool executions")
 
-        print(f"\n🔗 TrustChain provides the RIGHT solution:")
-        print(f"   • AI can chat normally (no unnecessary signatures)")
-        print(f"   • But when AI takes actions via tools → SIGNED!")
-        print(f"   • Perfect balance of usability and security 🛡️")
+        print("\n🔗 TrustChain provides the RIGHT solution:")
+        print("   • AI can chat normally (no unnecessary signatures)")
+        print("   • But when AI takes actions via tools → SIGNED!")
+        print("   • Perfect balance of usability and security 🛡️")
 
 
 # ==================== PYTEST INTEGRATION ====================
@@ -618,35 +618,35 @@ async def tool_calling_tests():
 async def test_conversational_ai_pytest(tool_calling_tests):
     """Pytest version of conversational AI test."""
     result = await tool_calling_tests.test_conversational_ai_without_tools()
-    assert result == True
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_weather_tool_pytest(tool_calling_tests):
     """Pytest version of weather tool test."""
     result = await tool_calling_tests.test_ai_weather_tool_calling()
-    assert result == True
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_payment_tool_pytest(tool_calling_tests):
     """Pytest version of payment tool test."""
     result = await tool_calling_tests.test_ai_payment_tool_calling()
-    assert result == True
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_calculator_tool_pytest(tool_calling_tests):
     """Pytest version of calculator tool test."""
     result = await tool_calling_tests.test_ai_calculator_tool_calling()
-    assert result == True
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_multi_tool_pytest(tool_calling_tests):
     """Pytest version of multi-tool test."""
     result = await tool_calling_tests.test_multi_tool_conversation()
-    assert result == True
+    assert result is True
 
 
 # ==================== MAIN EXECUTION ====================
