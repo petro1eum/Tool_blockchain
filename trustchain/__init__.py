@@ -8,6 +8,8 @@ Author: Ed Cherednik (edcherednik@gmail.com)
 Telegram: @EdCher
 """
 
+print("🔧 [IMPORT DEBUG] TrustChain __init__.py starting to load")
+
 __version__ = "0.1.0"
 __author__ = "Ed Cherednik"
 __email__ = "edcherednik@gmail.com"
@@ -137,3 +139,6 @@ def check_dependencies() -> dict:
         "openai": OpenAITrustedFunction is not None,
         "monitoring": PrometheusMetrics is not None,
     }
+
+
+print("🔧 [IMPORT DEBUG] TrustChain __init__.py import completed successfully")
