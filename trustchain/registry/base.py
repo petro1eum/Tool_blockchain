@@ -2,7 +2,7 @@
 
 import time
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 from trustchain.core.models import KeyMetadata, SignatureAlgorithm
 from trustchain.utils.exceptions import KeyNotFoundError, RegistryError
@@ -184,8 +184,8 @@ class CachedTrustRegistry(TrustRegistry):
         super().__init__(backend.namespace)
         self.backend = backend
         self.cache_ttl = cache_ttl
-        self._key_cache: Dict[str, tuple[KeyMetadata, float]] = {}
-        self._tool_cache: Dict[str, tuple[Dict[str, Any], float]] = {}
+        self._key_cache: Dict[str, Tuple[KeyMetadata, float]] = {}
+        self._tool_cache: Dict[str, Tuple[Dict[str, Any], float]] = {}
 
     async def start(self) -> None:
         """Start the backend registry."""

@@ -4,7 +4,7 @@ import asyncio
 import base64
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from trustchain.core.crypto import KeyPair, get_crypto_engine
 from trustchain.core.models import (
@@ -443,7 +443,7 @@ class SignatureEngine:
         return result
 
     def batch_verify(
-        self, signed_responses: list[SignedResponse], verifier_id: Optional[str] = None
+        self, signed_responses: List[SignedResponse], verifier_id: Optional[str] = None
     ) -> Dict[str, VerificationResult]:
         """Verify multiple signed responses."""
         results = {}
