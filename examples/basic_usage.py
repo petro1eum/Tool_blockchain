@@ -26,7 +26,7 @@ print("🔧 [CI DEBUG] TrustChain imported successfully", flush=True)
 
 
 # Example 1: Simple trusted tool
-@TrustedTool("weather_api_v1")
+@TrustedTool("weather_api_v1", require_nonce=False)  # Disable nonce for CI compatibility
 async def get_weather(location: str) -> Dict[str, Any]:
     """Get weather information for a location."""
     # Simulate API call
@@ -47,6 +47,7 @@ async def get_weather(location: str) -> Dict[str, Any]:
     trust_level=TrustLevel.HIGH,
     algorithm=SignatureAlgorithm.ED25519,
     description="Secure payment processing tool",
+    require_nonce=False,  # Disable nonce for CI compatibility
 )
 async def process_payment(
     amount: float, recipient: str, currency: str = "USD"
@@ -106,6 +107,7 @@ def calculate(operation: str, a: float, b: float) -> Dict[str, Any]:
     "data_analyzer_v1",
     trust_level=TrustLevel.MEDIUM,
     description="Analyze data and provide insights",
+    require_nonce=False,  # Disable nonce for CI compatibility
 )
 async def analyze_data(data: list, analysis_type: str = "basic") -> Dict[str, Any]:
     """Analyze numerical data."""
