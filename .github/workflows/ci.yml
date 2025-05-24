@@ -177,6 +177,10 @@ jobs:
       run: |
         python examples/simple_hallucination_test.py
     
+    - name: Test basic usage example
+      run: |
+        python examples/basic_usage.py
+    
     - name: Test OpenAI/Anthropic integration (without API keys)
       run: |
         python examples/openai_anthropic_integration.py 
