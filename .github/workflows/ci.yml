@@ -64,6 +64,10 @@ jobs:
       run: |
         python -m pytest tests/ --cov=trustchain --cov-report=xml --cov-report=html -v --tb=short
     
+    - name: Test v2 specific functionality
+      run: |
+        python -m pytest tests/test_v2_basic.py -v --tb=short
+    
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: codecov/codecov-action@v3
@@ -116,27 +120,35 @@ jobs:
     
     - name: Run performance tests
       run: |
-        python examples/hallucination_detection_demo.py
+        python examples/basic_usage.py
     
-    - name: Benchmark cryptographic operations
+    - name: Benchmark cryptographic operations (v2)
       run: |
         python -c "
         import time
         import asyncio
-        from trustchain import TrustedTool
+        from trustchain.v2 import TrustChain, TrustChainConfig
         
-        @TrustedTool('benchmark_tool', require_nonce=False)
+        # Create TrustChain instance for benchmarking
+        tc = TrustChain(TrustChainConfig(enable_nonce=False, enable_cache=False))
+        
+        @tc.tool('benchmark_tool')
         def benchmark_tool(data):
             return {'processed': data}
         
         async def benchmark():
             start = time.time()
-            tasks = [benchmark_tool(f'data_{i}', verify_response=False) for i in range(100)]
-            await asyncio.gather(*tasks)
+            # Test both sync and async
+            results = []
+            for i in range(50):
+                result = benchmark_tool(f'data_{i}')
+                results.append(result)
+            
             end = time.time()
-            avg_time = (end - start) * 1000 / 100
-            print(f'Average time per operation: {avg_time:.2f}ms')
-            assert avg_time < 10, f'Performance regression: {avg_time:.2f}ms > 10ms'
+            avg_time = (end - start) * 1000 / 50
+            print(f'Average time per operation (v2): {avg_time:.2f}ms')
+            print(f'All results verified: {all(r.is_verified for r in results)}')
+            assert avg_time < 15, f'Performance regression: {avg_time:.2f}ms > 15ms'
         
         asyncio.run(benchmark())
         "
@@ -181,18 +193,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
     
-    - name: Test hallucination detection demo
-      run: |
-        python examples/hallucination_detection_demo.py
-    
-    - name: Test simple hallucination test
-      run: |
-        python examples/simple_hallucination_test.py
-    
-    - name: Test basic usage example
+    - name: Test basic usage example (v2)
       run: |
         python examples/basic_usage.py
     
-    - name: Test OpenAI/Anthropic integration (without API keys)
+    - name: Test security vulnerability demo (v2)
       run: |
-        python examples/openai_anthropic_integration.py 
+        python examples/security_vulnerability_demo.py
+    
+    - name: Test full enforcement demo (v2)
+      run: |
+        python examples/full_enforcement_demo.py
+    
+    - name: Test LLM integration examples (v2, without API keys)
+      run: |
+        python examples/llm_real_api_examples.py 

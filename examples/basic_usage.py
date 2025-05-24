@@ -154,6 +154,7 @@ async def main():
         print(f"   Amount: ${payment_response.data['amount']}")
         print(f"   Fee: ${payment_response.data['fee']}")
         print(f"   Verified: {payment_response.is_verified}")
+        print(f"   Signature: {payment_response.signature[:32]}...")
     except Exception as e:
         print(f"   Error: {e}")
 
@@ -164,6 +165,7 @@ async def main():
     print(f"   Operation: {calc_response.data['operation']}")
     print(f"   Result: {calc_response.data['result']}")
     print(f"   Verified: {calc_response.is_verified}")
+    print(f"   Signature: {calc_response.signature[:32]}...")
 
     # Example 4: Data analysis (async)
     print("\n4. Data Analysis Example:")
@@ -173,6 +175,7 @@ async def main():
     print(f"   Average: {analysis_response.data['average']}")
     print(f"   Std Dev: {analysis_response.data['standard_deviation']:.2f}")
     print(f"   Verified: {analysis_response.is_verified}")
+    print(f"   Signature: {analysis_response.signature[:32]}...")
 
     # Example 5: Show tool statistics
     print("\n5. Tool Statistics:")
@@ -192,6 +195,13 @@ async def main():
     is_valid = tc.verify(weather_response)
     print(f"   Weather response valid: {is_valid}")
     print(f"   Algorithm used: {tc._signer.algorithm}")
+    print(f"   Signature ID: {weather_response.signature_id}")
+    print(f"   Timestamp: {weather_response.timestamp}")
+    
+    # Verify other responses too
+    print(f"   Payment response valid: {tc.verify(payment_response)}")
+    print(f"   Calculator response valid: {tc.verify(calc_response)}")
+    print(f"   Analysis response valid: {tc.verify(analysis_response)}")
 
     # Example 7: Error handling
     print("\n7. Error Handling Example:")
@@ -200,6 +210,15 @@ async def main():
         process_payment(-100, "test@example.com")
     except Exception as e:
         print(f"   Expected error caught: {type(e).__name__}: {e}")
+    
+    # Now try with valid amount
+    try:
+        valid_payment = process_payment(50.0, "test@example.com")
+        print(f"   Valid payment successful: {valid_payment.is_verified}")
+        print(f"   Transaction ID: {valid_payment.data['transaction_id']}")
+        print(f"   Signature: {valid_payment.signature[:32]}...")
+    except Exception as e:
+        print(f"   Unexpected error: {e}")
 
     print("\n✅ All examples completed successfully!")
     print("\nKey Benefits of v2:")

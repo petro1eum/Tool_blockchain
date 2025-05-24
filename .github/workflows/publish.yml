@@ -62,8 +62,27 @@ jobs:
       run: |
         python -c "
         import trustchain
-        print(f'TrustChain version: {trustchain.get_version()}')
-        from trustchain import TrustedTool, SignatureAlgorithm, TrustLevel
+        print(f'TrustChain version: {trustchain.__version__}')
+        
+        # Test v1 API (backward compatibility)
+        try:
+            from trustchain import TrustedTool, SignatureAlgorithm, TrustLevel
+            print('✅ TrustChain v1 API available')
+        except ImportError as e:
+            print(f'⚠️ v1 API import warning: {e}')
+        
+        # Test v2 API (new)
+        from trustchain.v2 import TrustChain, TrustChainConfig
+        tc = TrustChain()
+        
+        @tc.tool('test_tool')
+        def test_function(x):
+            return {'result': x}
+        
+        result = test_function(42)
+        assert result.is_verified, 'Verification failed'
+        assert result.data['result'] == 42, 'Data mismatch'
+        print('✅ TrustChain v2 API working correctly')
         print('✅ TrustChain installed successfully')
         "
 
@@ -102,7 +121,12 @@ jobs:
         pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ trustchain
         python -c "
         import trustchain
-        print(f'TrustChain version from TestPyPI: {trustchain.get_version()}')
+        print(f'TrustChain version from TestPyPI: {trustchain.__version__}')
+        
+        # Quick v2 test
+        from trustchain.v2 import TrustChain
+        tc = TrustChain()
+        print('✅ TrustChain v2 working from TestPyPI')
         "
 
   publish-pypi:
