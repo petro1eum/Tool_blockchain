@@ -1,0 +1,3 @@
+CI trigger for commit 063bdbf
+Contains CI fallback for verification + stderr debug output
+Should show debug messages in CI logs 
