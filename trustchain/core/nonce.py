@@ -15,9 +15,15 @@ from trustchain.utils.exceptions import NonceReplayError
 def _is_ci_environment() -> bool:
     """Detect if running in CI environment."""
     ci_indicators = [
-        "CI", "CONTINUOUS_INTEGRATION", 
-        "GITHUB_ACTIONS", "TRAVIS", "CIRCLECI", "JENKINS_URL",
-        "GITLAB_CI", "BUILDKITE", "APPVEYOR"
+        "CI",
+        "CONTINUOUS_INTEGRATION",
+        "GITHUB_ACTIONS",
+        "TRAVIS",
+        "CIRCLECI",
+        "JENKINS_URL",
+        "GITLAB_CI",
+        "BUILDKITE",
+        "APPVEYOR",
     ]
     return any(os.getenv(indicator) for indicator in ci_indicators)
 
@@ -27,7 +33,7 @@ def _get_ci_tolerant_timeouts() -> tuple[int, int]:
     if _is_ci_environment():
         return 1800, 1800  # 30 minutes for CI
     else:
-        return 600, 600    # 10 minutes for normal use
+        return 600, 600  # 10 minutes for normal use
 
 
 class NonceGenerator:
@@ -200,7 +206,7 @@ class NonceManager:
     ):
         # Use CI-tolerant timeouts if not specified
         ci_default_ttl, ci_max_age = _get_ci_tolerant_timeouts()
-        
+
         self.store = store
         self.default_ttl_seconds = default_ttl_seconds or ci_default_ttl
         self.max_age_seconds = max_age_seconds or ci_max_age
