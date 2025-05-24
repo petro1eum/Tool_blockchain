@@ -39,6 +39,8 @@ jobs:
       run: |
         python --version
         pip --version
+        python -c "import platform; print('Platform:', platform.system(), platform.release(), platform.machine())"
+        python -c "import asyncio; print('Event loop policy:', asyncio.get_event_loop_policy().__class__.__name__)"
         pip list | grep -E "(pytest|coverage|black|ruff|isort)" || echo "Some packages not found"
     
     - name: Lint with black
@@ -60,7 +62,7 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest tests/ --cov=trustchain --cov-report=xml --cov-report=html
+        python -m pytest tests/ --cov=trustchain --cov-report=xml --cov-report=html -v --tb=short
     
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

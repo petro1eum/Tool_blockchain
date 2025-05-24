@@ -16,9 +16,15 @@ Run with: python tests/test_llm_tool_calling.py
 import asyncio
 import json
 import os
+import platform
+import sys
 import time
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
+
+# Windows compatibility fix
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 import pytest
 

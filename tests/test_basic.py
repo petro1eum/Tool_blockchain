@@ -6,8 +6,13 @@ Telegram: @EdCher
 """
 
 import asyncio
+import platform
 import time
 from typing import Any, Dict
+
+# Windows compatibility fix
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 import pytest
 
@@ -172,7 +177,7 @@ class TestTrustedTools:
     async def test_simple_trusted_tool(self, registry):
         """Test basic trusted tool creation and execution."""
 
-        @TrustedTool("test_simple_tool", registry=registry, auto_register=False)
+        @TrustedTool("test_simple_tool", registry=registry, auto_register=False, require_nonce=False)
         async def simple_tool(message: str) -> Dict[str, Any]:
             return {"echo": message, "timestamp": int(time.time() * 1000)}
 
@@ -189,7 +194,7 @@ class TestTrustedTools:
     async def test_tool_with_error(self, registry):
         """Test tool error handling."""
 
-        @TrustedTool("test_error_tool", registry=registry, auto_register=False)
+        @TrustedTool("test_error_tool", registry=registry, auto_register=False, require_nonce=False)
         async def error_tool(should_error: bool) -> Dict[str, Any]:
             if should_error:
                 raise ValueError("Test error")
@@ -206,7 +211,7 @@ class TestTrustedTools:
     async def test_tool_statistics(self, registry):
         """Test tool statistics tracking."""
 
-        @TrustedTool("test_stats_tool", registry=registry, auto_register=False)
+        @TrustedTool("test_stats_tool", registry=registry, auto_register=False, require_nonce=False)
         async def stats_tool(value: int) -> Dict[str, Any]:
             return {"result": value * 2}
 
@@ -223,7 +228,7 @@ class TestTrustedTools:
     async def test_synchronous_tool(self, registry):
         """Test synchronous function wrapping."""
 
-        @TrustedTool("test_sync_tool", registry=registry, auto_register=False)
+        @TrustedTool("test_sync_tool", registry=registry, auto_register=False, require_nonce=False)
         def sync_tool(a: int, b: int) -> Dict[str, Any]:
             return {"sum": a + b, "product": a * b}
 
@@ -332,7 +337,7 @@ async def test_full_integration():
 
     try:
         # Create trusted tool
-        @TrustedTool("integration_test_tool", registry=registry)
+        @TrustedTool("integration_test_tool", registry=registry, require_nonce=False)
         async def integration_tool(
             operation: str, a: float, b: float
         ) -> Dict[str, Any]:
