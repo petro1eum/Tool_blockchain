@@ -74,17 +74,17 @@ class BaseTrustedTool(ABC):
     @property
     def signature_engine(self) -> SignatureEngine:
         """Get the signature engine - prefer global engine."""
-        print(f"🔧 [ENGINE DEBUG] Getting signature engine for tool '{self.tool_id}'")
+        print(f"🔧 [ENGINE DEBUG] Getting signature engine for tool '{self.tool_id}'", flush=True)
         # Always use global engine - it has InMemoryVerifier for standalone operation
         global_engine = get_signature_engine()
-        print(f"🔧 [ENGINE DEBUG] Global engine obtained for tool '{self.tool_id}'")
+        print(f"🔧 [ENGINE DEBUG] Global engine obtained for tool '{self.tool_id}'", flush=True)
         
         # If we have initial engine preference, use it instead
         if self._initial_signature_engine is not None:
-            print(f"🔧 [ENGINE DEBUG] Using initial engine for tool '{self.tool_id}'")
+            print(f"🔧 [ENGINE DEBUG] Using initial engine for tool '{self.tool_id}'", flush=True)
             return self._initial_signature_engine
         
-        print(f"🔧 [ENGINE DEBUG] Using global engine for tool '{self.tool_id}'")
+        print(f"🔧 [ENGINE DEBUG] Using global engine for tool '{self.tool_id}'", flush=True)
         return global_engine
 
     def _find_available_signer(self) -> str:
@@ -110,9 +110,9 @@ class BaseTrustedTool(ABC):
             return self.tool_id
         except Exception as e:
             # Print critical error for CI debugging
-            print(f"🚨 [CRITICAL] Failed to create signer for {self.tool_id}: {e}")
-            print(f"🚨 [CRITICAL] Available signers: {list(self.signature_engine._signers.keys())}")
-            print(f"🚨 [CRITICAL] Available verifiers: {list(self.signature_engine._verifiers.keys())}")
+            print(f"🚨 [CRITICAL] Failed to create signer for {self.tool_id}: {e}", flush=True)
+            print(f"🚨 [CRITICAL] Available signers: {list(self.signature_engine._signers.keys())}", flush=True)
+            print(f"🚨 [CRITICAL] Available verifiers: {list(self.signature_engine._verifiers.keys())}", flush=True)
             raise ToolExecutionError(
                 self.tool_id, f"No signers available and failed to create one: {e}"
             )
@@ -272,9 +272,9 @@ class FunctionTrustedTool(BaseTrustedTool):
     def __init__(
         self, tool_id: str, func: Callable, description: Optional[str] = None, **kwargs
     ):
-        print(f"🔧 [TOOL INIT DEBUG] FunctionTrustedTool.__init__ called for '{tool_id}'")
+        print(f"🔧 [TOOL INIT DEBUG] FunctionTrustedTool.__init__ called for '{tool_id}'", flush=True)
         super().__init__(tool_id, **kwargs)
-        print(f"🔧 [TOOL INIT DEBUG] BaseTrustedTool.__init__ completed for '{tool_id}'")
+        print(f"🔧 [TOOL INIT DEBUG] BaseTrustedTool.__init__ completed for '{tool_id}'", flush=True)
         self.func = func
         self.description = description or f"Trusted tool: {tool_id}"
 

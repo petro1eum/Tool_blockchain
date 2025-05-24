@@ -47,7 +47,7 @@ def TrustedTool(
     """
 
     def decorator(func: Callable) -> Callable:
-        print(f"🔧 [DECORATOR DEBUG] Creating TrustedTool '{tool_id}' for function {func.__name__}")
+        print(f"🔧 [DECORATOR DEBUG] Creating TrustedTool '{tool_id}' for function {func.__name__}", flush=True)
         # Create the appropriate tool type
         if multi_sig:
             if not required_signatures or not threshold:
@@ -94,9 +94,9 @@ def TrustedTool(
                         )
 
             tool = MultiSigFunctionTool()
-            print(f"🔧 [DECORATOR DEBUG] Created MultiSigFunctionTool for '{tool_id}'")
+            print(f"🔧 [DECORATOR DEBUG] Created MultiSigFunctionTool for '{tool_id}'", flush=True)
         else:
-            print(f"🔧 [DECORATOR DEBUG] Creating FunctionTrustedTool for '{tool_id}'")
+            print(f"🔧 [DECORATOR DEBUG] Creating FunctionTrustedTool for '{tool_id}'", flush=True)
             tool = FunctionTrustedTool(
                 tool_id=tool_id,
                 func=func,
@@ -108,7 +108,7 @@ def TrustedTool(
                 require_nonce=require_nonce,
                 auto_register=auto_register,
             )
-            print(f"🔧 [DECORATOR DEBUG] FunctionTrustedTool created for '{tool_id}'")
+            print(f"🔧 [DECORATOR DEBUG] FunctionTrustedTool created for '{tool_id}'", flush=True)
 
         # Register globally if requested
         if register_globally:
@@ -117,14 +117,14 @@ def TrustedTool(
         # Create wrapper function that calls the tool
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            print(f"🔧 [WRAPPER DEBUG] Calling wrapped tool '{tool_id}' with args={args}, kwargs={kwargs}")
+            print(f"🔧 [WRAPPER DEBUG] Calling wrapped tool '{tool_id}' with args={args}, kwargs={kwargs}", flush=True)
             # Extract TrustChain-specific arguments
             request_id = kwargs.pop("request_id", None)
             nonce = kwargs.pop("nonce", None)
             caller_id = kwargs.pop("caller_id", "unknown")
             verify_response = kwargs.pop("verify_response", True)
 
-            print(f"🔧 [WRAPPER DEBUG] About to call tool '{tool_id}' with verify_response={verify_response}")
+            print(f"🔧 [WRAPPER DEBUG] About to call tool '{tool_id}' with verify_response={verify_response}", flush=True)
             # Call the tool
             return await tool(
                 *args,

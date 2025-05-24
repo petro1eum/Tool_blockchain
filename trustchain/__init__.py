@@ -8,7 +8,7 @@ Author: Ed Cherednik (edcherednik@gmail.com)
 Telegram: @EdCher
 """
 
-print("🔧 [IMPORT DEBUG] TrustChain __init__.py starting to load")
+print("🔧 [IMPORT DEBUG] TrustChain __init__.py starting to load", flush=True)
 
 __version__ = "0.1.0"
 __author__ = "Ed Cherednik"
@@ -141,4 +141,4 @@ def check_dependencies() -> dict:
     }
 
 
-print("🔧 [IMPORT DEBUG] TrustChain __init__.py import completed successfully")
+print("🔧 [IMPORT DEBUG] TrustChain __init__.py import completed successfully", flush=True)

@@ -300,7 +300,7 @@ class SignatureEngine:
             if not self._default_verifier._signature_engine:
                 print("🚨 [DEBUG] CRITICAL: InMemoryVerifier engine reference not set!")
             else:
-                print(f"✅ [DEBUG] InMemoryVerifier properly linked to engine")
+                print(f"✅ [DEBUG] InMemoryVerifier properly linked to engine", flush=True)
 
     def register_signer(self, signer_id: str, signer: Signer) -> None:
         """Register a signer."""
@@ -538,7 +538,7 @@ def get_signature_engine() -> SignatureEngine:
         _signature_engine = SignatureEngine()
         # Only print debug if no default verifier (critical error)
         if not _signature_engine._default_verifier:
-            print("🚨 [CRITICAL] SignatureEngine has no default verifier!")
+            print("🚨 [CRITICAL] SignatureEngine has no default verifier!", flush=True)
     return _signature_engine
 
 
