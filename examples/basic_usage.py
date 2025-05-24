@@ -26,7 +26,9 @@ print("🔧 [CI DEBUG] TrustChain imported successfully", flush=True)
 
 
 # Example 1: Simple trusted tool
-@TrustedTool("weather_api_v1", require_nonce=False)  # Disable nonce for CI compatibility
+@TrustedTool(
+    "weather_api_v1", require_nonce=False
+)  # Disable nonce for CI compatibility
 async def get_weather(location: str) -> Dict[str, Any]:
     """Get weather information for a location."""
     # Simulate API call
