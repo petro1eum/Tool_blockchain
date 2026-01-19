@@ -22,6 +22,9 @@ class TrustChainConfig:
     # Performance settings
     enable_cache: bool = True
 
+    # Enterprise: Observability
+    enable_metrics: bool = False  # Prometheus metrics (requires prometheus_client)
+
     # Hallucination detection patterns
     tool_claim_patterns: List[str] = field(
         default_factory=lambda: [
@@ -37,6 +40,16 @@ class TrustChainConfig:
     # Storage backend
     storage_backend: str = "memory"  # Options: memory, redis
     redis_url: Optional[str] = None
+
+    # Key persistence
+    key_file: Optional[str] = None  # Path to key file for persistence
+    key_env_var: Optional[str] = None  # Env var name for key (base64 JSON)
+
+    # Enterprise: Nonce storage backend
+    nonce_backend: str = "memory"  # Options: memory, redis
+
+    # Enterprise: Multi-tenancy
+    tenant_id: Optional[str] = None  # Namespace for tenant isolation
 
     def __post_init__(self):
         """Validate configuration."""

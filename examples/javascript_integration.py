@@ -28,9 +28,9 @@ def main():
     
     # Create TrustChain instance with optimized config for web
     config = TrustChainConfig(
-        enable_nonce=True,      # Enable nonce for security
-        enable_cache=True,      # Enable caching for performance
-        cache_max_size=1000,    # Cache up to 1000 responses
+        enable_nonce=True,        # Enable nonce for security
+        enable_cache=True,        # Enable caching for performance
+        max_cached_responses=1000 # Cache up to 1000 responses
     )
     tc = TrustChain(config)
     

@@ -28,7 +28,8 @@ def test_basic_tool_creation():
 
 def test_tool_verification():
     """Test signature verification."""
-    tc = TrustChain()
+    # Disable nonce to test pure signature verification
+    tc = TrustChain(TrustChainConfig(enable_nonce=False))
 
     @tc.tool("secure_tool")
     def secure_operation(value: str) -> dict:
@@ -46,7 +47,7 @@ def test_tool_verification():
     tampered_response = copy.deepcopy(response)
     tampered_response.data["tampered"] = True
 
-    # Verification should fail
+    # Verification should fail (signature doesn't match tampered data)
     assert tc.verify(tampered_response) is False
 
 

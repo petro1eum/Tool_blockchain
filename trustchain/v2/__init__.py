@@ -1,27 +1,38 @@
 """
-TrustChain v2 - Simplified API for cryptographically signed AI tool responses.
+TrustChain v2 - Cryptographically signed AI tool responses.
 
-This is a complete rewrite focusing on simplicity and performance.
+Enterprise-ready: Redis, Prometheus, multi-tenancy, REST API.
 """
 
 from .config import TrustChainConfig
 from .core import TrustChain
+from .logging import get_logger, setup_logging
+from .metrics import TrustChainMetrics, get_metrics
+from .nonce_storage import MemoryNonceStorage, NonceStorage, RedisNonceStorage
 from .signer import SignedResponse
 from .storage import MemoryStorage, Storage
+from .tenants import TenantInfo, TenantManager
+from .verifier import TrustChainVerifier, VerificationResult
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
+    # Core
     "TrustChain",
     "TrustChainConfig",
     "SignedResponse",
-    "Storage",
-    "MemoryStorage",
+    "TrustChainVerifier",
+    "VerificationResult",
+    # Enterprise
+    "TenantManager",
+    "TenantInfo",
+    "get_metrics",
+    "setup_logging",
+    "get_logger",
+    "RedisNonceStorage",
 ]
 
 
-# Convenience function for quick start
-def create_trustchain(**config_kwargs) -> TrustChain:
-    """Create a TrustChain instance with custom configuration."""
-    config = TrustChainConfig(**config_kwargs)
-    return TrustChain(config)
+def create_trustchain(**kwargs) -> TrustChain:
+    """Create TrustChain with custom config."""
+    return TrustChain(TrustChainConfig(**kwargs))

@@ -327,6 +327,69 @@ def my_tool(x):  # Sync or async - auto-detected!
 
 **[📋 Complete Migration Guide](MIGRATION_GUIDE.md)**
 
+## 🏢 Enterprise Features
+
+TrustChain includes production-ready enterprise capabilities:
+
+### **Distributed Nonce Storage (Redis)**
+
+```python
+tc = TrustChain(TrustChainConfig(
+    nonce_backend="redis",
+    redis_url="redis://localhost:6379",
+    tenant_id="customer_123"  # Multi-tenancy
+))
+```
+
+### **Multi-Tenancy**
+
+```python
+from trustchain.v2.tenants import TenantManager
+
+manager = TenantManager(redis_url="redis://localhost:6379")
+tc = manager.get_or_create("tenant_a")  # Separate keys per tenant
+
+# Different tenants have isolated keys
+tc_a = manager.get_or_create("tenant_a")
+tc_b = manager.get_or_create("tenant_b")
+assert tc_a.get_key_id() != tc_b.get_key_id()
+```
+
+### **Prometheus Metrics**
+
+```python
+tc = TrustChain(TrustChainConfig(enable_metrics=True))
+
+# Metrics available:
+# - trustchain_signs_total
+# - trustchain_verifies_total  
+# - trustchain_sign_seconds (histogram)
+# - trustchain_errors_total
+```
+
+### **REST API Server**
+
+```bash
+pip install fastapi uvicorn
+uvicorn trustchain.v2.server:app --port 8000
+```
+
+Endpoints:
+- `POST /sign` - Sign data
+- `POST /verify` - Verify signature
+- `GET /health` - Health check
+- `GET /public-key` - Export public key
+- `GET /metrics` - Prometheus metrics
+
+### **Structured JSON Logging**
+
+```python
+from trustchain.v2.logging import setup_logging
+
+setup_logging(level="INFO", json_format=True)
+# Output: {"ts": 1768..., "level": "INFO", "op": "sign", "tool_id": "api"}
+```
+
 ## 🧪 Testing
 
 ```bash

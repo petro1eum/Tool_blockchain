@@ -152,3 +152,61 @@ class Signer:
     def get_key_id(self) -> str:
         """Get the key identifier."""
         return self.key_id
+
+    def export_keys(self) -> dict:
+        """Export keys for persistence.
+
+        Returns:
+            dict with type, key_id, and key material (base64 encoded)
+        """
+        if self._use_fallback:
+            return {
+                "type": "fallback",
+                "key_id": self.key_id,
+                "secret": self._secret,
+                "algorithm": self.algorithm,
+            }
+        else:
+            # Export private key in raw format
+            private_bytes = self._private_key.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            return {
+                "type": "ed25519",
+                "key_id": self.key_id,
+                "private_key": base64.b64encode(private_bytes).decode("ascii"),
+                "algorithm": self.algorithm,
+            }
+
+    @classmethod
+    def from_keys(cls, key_data: dict) -> "Signer":
+        """Restore signer from exported keys.
+
+        Args:
+            key_data: dict from export_keys()
+
+        Returns:
+            Signer instance with restored keys
+        """
+        signer = cls.__new__(cls)
+        signer.algorithm = key_data.get("algorithm", "ed25519")
+        signer.key_id = key_data["key_id"]
+
+        if key_data["type"] == "fallback":
+            signer._use_fallback = True
+            signer._secret = key_data["secret"]
+        elif key_data["type"] == "ed25519":
+            if not HAS_CRYPTOGRAPHY:
+                raise ValueError("cryptography library required for Ed25519")
+            signer._use_fallback = False
+            private_bytes = base64.b64decode(key_data["private_key"])
+            signer._private_key = ed25519.Ed25519PrivateKey.from_private_bytes(
+                private_bytes
+            )
+            signer._public_key = signer._private_key.public_key()
+        else:
+            raise ValueError(f"Unknown key type: {key_data['type']}")
+
+        return signer

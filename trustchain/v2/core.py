@@ -1,12 +1,18 @@
 """Core TrustChain v2 implementation."""
 
 import asyncio
+import base64
 import functools
+import json
+import os
 import time
-from collections import deque
 from typing import Any, Callable, Dict, Optional, Union
 
+from trustchain.utils.exceptions import NonceReplayError
+
 from .config import TrustChainConfig
+from .metrics import get_metrics
+from .nonce_storage import NonceStorage, create_nonce_storage
 from .signer import SignedResponse, Signer
 from .storage import MemoryStorage, Storage
 
@@ -16,13 +22,46 @@ class TrustChain:
 
     def __init__(self, config: Optional[TrustChainConfig] = None):
         self.config = config or TrustChainConfig()
-        self._signer = Signer(self.config.algorithm)
+        self._signer = self._load_or_create_signer()
         self._storage = self._create_storage()
         self._tools: Dict[str, Dict[str, Any]] = {}
 
         # Nonce tracking for replay protection
         if self.config.enable_nonce:
-            self._used_nonces = deque(maxlen=1000)  # Efficient with deque
+            self._nonce_storage = create_nonce_storage(
+                backend=self.config.nonce_backend,
+                redis_url=self.config.redis_url,
+                tenant_id=self.config.tenant_id,
+            )
+        else:
+            self._nonce_storage: Optional[NonceStorage] = None
+
+        # Enterprise: Prometheus metrics
+        self._metrics = get_metrics(self.config.enable_metrics)
+
+    def _load_or_create_signer(self) -> Signer:
+        """Load signer from persistence or create new one."""
+        # Try loading from environment variable
+        if self.config.key_env_var:
+            env_value = os.environ.get(self.config.key_env_var)
+            if env_value:
+                try:
+                    key_data = json.loads(base64.b64decode(env_value).decode())
+                    return Signer.from_keys(key_data)
+                except Exception:
+                    pass  # Fall through to file or new key
+
+        # Try loading from file
+        if self.config.key_file and os.path.exists(self.config.key_file):
+            try:
+                with open(self.config.key_file) as f:
+                    key_data = json.load(f)
+                return Signer.from_keys(key_data)
+            except Exception:
+                pass  # Fall through to new key
+
+        # Create new signer
+        return Signer(self.config.algorithm)
 
     def _create_storage(self) -> Storage:
         """Create storage backend based on config."""
@@ -147,12 +186,27 @@ class TrustChain:
             raise
 
     def verify(self, response: Union[SignedResponse, Dict[str, Any]]) -> bool:
-        """Verify a signed response."""
+        """Verify a signed response.
+
+        Raises:
+            NonceReplayError: If nonce was already used (replay attack detected)
+        """
         # Convert dict to SignedResponse if needed
         if isinstance(response, dict):
             response = SignedResponse(**response)
 
-        # Verify signature first (before checking nonce)
+        # Check nonce for replay protection (if enabled)
+        if self._nonce_storage and response.nonce:
+            # check_and_add returns False if nonce already exists
+            if not self._nonce_storage.check_and_add(
+                response.nonce, self.config.nonce_ttl
+            ):
+                raise NonceReplayError(
+                    response.nonce,
+                    message=f"Replay attack detected: nonce '{response.nonce[:8]}...' already used",
+                )
+
+        # Verify cryptographic signature
         is_valid = self._signer.verify(response)
 
         # Cache verification result
@@ -161,12 +215,14 @@ class TrustChain:
         return is_valid
 
     def _generate_nonce(self) -> str:
-        """Generate a unique nonce."""
+        """Generate a unique nonce.
+
+        Note: Nonces are NOT added to _used_nonces here.
+        They are tracked only during verify() to detect replay attacks.
+        """
         import uuid
 
-        nonce = str(uuid.uuid4())
-        self._used_nonces.append(nonce)
-        return nonce
+        return str(uuid.uuid4())
 
     def _check_nonce(self, nonce: str) -> bool:
         """Check if nonce is valid and not already used."""
@@ -203,3 +259,44 @@ class TrustChain:
     def clear_cache(self) -> None:
         """Clear the response cache."""
         self._storage.clear()
+
+    # === Key Persistence Methods ===
+
+    def export_keys(self) -> dict:
+        """Export signer keys for persistence.
+
+        Returns:
+            dict with key material that can be saved to file or env var
+        """
+        return self._signer.export_keys()
+
+    def save_keys(self, filepath: Optional[str] = None) -> str:
+        """Save signer keys to file.
+
+        Args:
+            filepath: Path to save keys. Uses config.key_file if not provided.
+
+        Returns:
+            Path where keys were saved
+        """
+        path = filepath or self.config.key_file
+        if not path:
+            raise ValueError("No filepath provided and config.key_file not set")
+
+        key_data = self.export_keys()
+        with open(path, "w") as f:
+            json.dump(key_data, f, indent=2)
+
+        return path
+
+    def export_public_key(self) -> str:
+        """Export public key for external verification.
+
+        Returns:
+            Base64-encoded public key
+        """
+        return self._signer.get_public_key()
+
+    def get_key_id(self) -> str:
+        """Get unique identifier for current signing key."""
+        return self._signer.get_key_id()
